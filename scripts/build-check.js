@@ -31,6 +31,7 @@ if (!fs.existsSync(path.join(typescriptDir, "src", "compiler", "diagnosticInform
 
   $> git submodule init
   $> cd lib/typescript/master
+  $> npm i
   $> npm run build
   `);
   process.exit(1);
