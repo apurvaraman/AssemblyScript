@@ -62,6 +62,7 @@ export import PrefixUnaryExpression = ts.PrefixUnaryExpression;
 export import Program = ts.Program;
 export import PropertyAccessExpression = ts.PropertyAccessExpression;
 export import PropertyDeclaration = ts.PropertyDeclaration;
+export import Signature = ts.Signature;
 export import TypeAliasDeclaration = ts.TypeAliasDeclaration;
 export import TypeChecker = ts.TypeChecker;
 export import TypeNode = ts.TypeNode;

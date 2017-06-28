@@ -30,6 +30,11 @@ export interface TypeArgument {
   node: typescript.TypeNode;
 }
 
+export interface ClassMethod {
+  template: FunctionTemplate;
+  instance?: Function;
+}
+
 /** A class instance with generic parameters resolved. */
 export class Class extends ClassBase {
 
@@ -44,7 +49,7 @@ export class Class extends ClassBase {
   /** Static and instance class properties. */
   properties: { [key: string]: Property } = {};
   /** Static and instance class methods. */
-  methods: { [key: string]: { template: FunctionTemplate, instance?: Function } } = {};
+  methods: { [key: string]: ClassMethod } = {};
   /** Class constructor, if any. */
   ctor?: Function;
   /** Size in memory, in bytes. */

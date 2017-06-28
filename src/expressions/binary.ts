@@ -7,6 +7,7 @@ import compileStore from "./helpers/store";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles a binary expression. Covers addition, multiplication and so on. */
 export function compileBinary(compiler: Compiler, node: typescript.BinaryExpression, contextualType: reflection.Type): binaryen.Expression {
 
   if (node.operatorToken.kind === typescript.SyntaxKind.EqualsToken)

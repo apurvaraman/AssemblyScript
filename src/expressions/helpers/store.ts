@@ -5,6 +5,7 @@ import Compiler from "../../compiler";
 import * as reflection from "../../reflection";
 import * as typescript from "../../typescript";
 
+/** Helper compiling a store operation. */
 export function compileStore(compiler: Compiler, node: typescript.Expression, type: reflection.Type, ptr: binaryen.Expression, value: binaryen.Expression, offset: number): binaryen.Expression {
   const op = compiler.module;
 

@@ -6,18 +6,42 @@ import { Compiler, CompilerMemoryModel } from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles a function call expression. */
 export function compileCall(compiler: Compiler, node: typescript.CallExpression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
+
+  let declaration: typescript.FunctionLikeDeclaration;
+  let thisArg: binaryen.Expression | undefined;
+
+  // Try to resolve the signature of the node: works if it's a call to a global or static function
   const signature = compiler.checker.getResolvedSignature(node);
-  if (!signature) {
+  if (signature && (declaration = <typescript.FunctionLikeDeclaration>signature.declaration)) {
+    //                             ^ FunctionLikeDeclaration extends SignatureDeclaration
+
+  // Instance method call consisting of thisExpression.methodName
+  } else if (node.expression.kind === typescript.SyntaxKind.PropertyAccessExpression) {
+    const accessNode = <typescript.PropertyAccessExpression>node.expression;
+    const methodName = typescript.getTextOfNode(accessNode.name);
+    thisArg = compiler.compileExpression(accessNode.expression, compiler.uintptrType);
+    const classType = typescript.getReflectedType(accessNode.expression);
+    let method: reflection.ClassMethod;
+    if (!classType || !classType.underlyingClass || !(method = classType.underlyingClass.methods[methodName])) {
+      compiler.error(node, "Unresolvable call target");
+      return op.unreachable();
+    }
+    declaration = method.template.declaration;
+
+  } else {
+    compiler.error(node, "Unsupported call expression", "SyntaxKind " + node.expression.kind);
+    return op.unreachable();
+  }
+
+  if (!declaration) {
     compiler.error(node, "Unresolvable call target");
     return op.unreachable();
   }
 
-  // TODO: evaluate node.expression (i.e. 'a[0].someFunc') to obtain the function
-
   // Initialize generic function from type arguments
-  const declaration = <typescript.FunctionLikeDeclaration>signature.declaration; // FunctionLikeDeclaration extends SignatureDeclaration
   let instance = typescript.getReflectedFunction(declaration);
   if (!instance) {
     const template = typescript.getReflectedFunctionTemplate(declaration);
@@ -45,9 +69,15 @@ export function compileCall(compiler: Compiler, node: typescript.CallExpression,
   let i = 0;
 
   if (instance.isInstance) {
-    argumentExpressions[i++] = op.getLocal(0, binaryen.typeOf(instance.parameters[0].type, compiler.uintptrSize));
+    if (thisArg === undefined) {
+      thisArg = op.getLocal(0, binaryen.typeOf(instance.parameters[0].type, compiler.uintptrSize));
+      // thisArg = op.unreachable();
+      // compiler.error(node, "Cannot call instance method as static method");
+    }
+    argumentExpressions[i++] = thisArg; // op.getLocal(0, binaryen.typeOf(instance.parameters[0].type, compiler.uintptrSize));
     argumentCount -= 1;
-  }
+  } else if (thisArg !== undefined)
+    compiler.error(node, "Cannot call static method as instance method");
 
   for (let j = 0; j < argumentCount; ++j) {
     const argumentNode = node.arguments[j];

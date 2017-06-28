@@ -27,7 +27,7 @@ export abstract class FunctionBase {
   /** Tests if this function is exported to the embedder. */
   get isExport(): boolean { return typescript.isExport(this.declaration); }
   /** Tests if this function is an instance member / not static. */
-  get isInstance(): boolean { return this.declaration.kind === typescript.SyntaxKind.Constructor || this.declaration.kind === typescript.SyntaxKind.MethodDeclaration; }
+  get isInstance(): boolean { return !typescript.isStatic(this.declaration) && (this.declaration.kind === typescript.SyntaxKind.Constructor || this.declaration.kind === typescript.SyntaxKind.MethodDeclaration); }
   /** Tests if this function is the constructor of a class. */
   get isConstructor(): boolean { return this.declaration.kind === typescript.SyntaxKind.Constructor; }
 

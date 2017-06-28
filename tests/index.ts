@@ -23,7 +23,7 @@ import * as dist from "..";
 runTests("dist", dist.Compiler, dist.binaryen, dist.typescript, dist.wabt);
 
 // common test runner for both source and the distribution files
-function runTests(kind, Compiler, binaryen, typescript, wabt) {
+function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, wabt: any) {
 
   // 1) test compiler results to match fictures
   tape(kind + " - fixtures", test => {
@@ -38,12 +38,16 @@ function runTests(kind, Compiler, binaryen, typescript, wabt) {
         const source = fs.readFileSync(file, "utf8");
         const options = getOptions(source);
 
-        let module: binaryen.Module;
+        let module: binaryen.Module | null = null;
         let actual: string = "";
 
-        test.doesNotThrow(() => {
-          module = Compiler.compileFile(file, options);
-        }, "should compile without throwing");
+        try {
+          module = <binaryen.Module>Compiler.compileFile(file, options);
+        } catch (e) {
+          test.fail("should compile without throwing");
+          test.end();
+          return;
+        }
 
         const messages = typescript.formatDiagnosticsWithColorAndContext(Compiler.lastDiagnostics);
         if (messages.length)
@@ -70,13 +74,12 @@ function runTests(kind, Compiler, binaryen, typescript, wabt) {
               diff.forEach(part => {
                 if (part.added || part.removed)
                   changed = true;
-                var color = part.added ? 'green' : part.removed ? 'red' : 'grey';
-                process.stderr.write(chalk[color](part.value));
+                process.stderr.write((part.added ? chalk.green : part.removed ? chalk.red : chalk.grey)(part.value));
               });
           } else {
             if (argv["create"]) {
               test.comment("creating fixture: " + wastFile);
-              fs.writeFileSync(wastFile, actual, "utf8");
+              fs.writeFileSync(wastFile, actual, { encoding: "utf8" });
             } else
               test.fail("fixture should exist (use --create to create it)");
           }
@@ -109,10 +112,13 @@ function runTests(kind, Compiler, binaryen, typescript, wabt) {
       const options = getOptions(source);
 
       let module: binaryen.Module;
-
-      test.doesNotThrow(() => {
-        module = Compiler.compileFile(file, options);
-      }, name + ".ts should compile without throwing");
+      try {
+        module = <binaryen.Module>Compiler.compileFile(file, options);
+      } catch (e) {
+        test.fail(name + ".ts should compile without throwing");
+        test.end();
+        return;
+      }
 
       const messages = typescript.formatDiagnosticsWithColorAndContext(Compiler.lastDiagnostics);
       if (messages.length)

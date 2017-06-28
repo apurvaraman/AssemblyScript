@@ -5,6 +5,7 @@ import Compiler from "../../compiler";
 import * as reflection from "../../reflection";
 import * as typescript from "../../typescript";
 
+/** Helper compiling a load operation. */
 export function compileLoad(compiler: Compiler, node: typescript.Expression, type: reflection.Type, ptr: binaryen.Expression, offset: number): binaryen.Expression {
   const op = compiler.module;
 

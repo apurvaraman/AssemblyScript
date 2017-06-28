@@ -1,0 +1,6 @@
+ (export "test" (func $test))
+ (func $a (type $v)
+ )
+ (func $test (type $v)
+  (call $a)
+ )

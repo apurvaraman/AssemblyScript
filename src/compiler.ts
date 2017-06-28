@@ -875,110 +875,12 @@ export class Compiler {
 
   /** Compiles a statement. */
   compileStatement(node: typescript.Statement): binaryen.Statement {
-    const op = this.module;
-
-    switch (node.kind) {
-
-      case typescript.SyntaxKind.TypeAliasDeclaration:
-        return op.nop(); // already handled by TypeScript
-
-      case typescript.SyntaxKind.EmptyStatement:
-        return statements.compileEmpty(this/*, <typescript.EmptyStatement>node*/);
-
-      case typescript.SyntaxKind.VariableStatement:
-        return statements.compileVariable(this, <typescript.VariableStatement>node);
-
-      case typescript.SyntaxKind.IfStatement:
-        return statements.compileIf(this, <typescript.IfStatement>node);
-
-      case typescript.SyntaxKind.SwitchStatement:
-        return statements.compileSwitch(this, <typescript.SwitchStatement>node);
-
-      case typescript.SyntaxKind.WhileStatement:
-        return statements.compileWhile(this, <typescript.WhileStatement>node);
-
-      case typescript.SyntaxKind.DoStatement:
-        return statements.compileDo(this, <typescript.DoStatement>node);
-
-      case typescript.SyntaxKind.ForStatement:
-        return statements.compileFor(this, <typescript.ForStatement>node);
-
-      case typescript.SyntaxKind.Block:
-        return statements.compileBlock(this, <typescript.Block>node);
-
-      case typescript.SyntaxKind.BreakStatement:
-      case typescript.SyntaxKind.ContinueStatement:
-        return statements.compileBreak(this, <typescript.BreakStatement | typescript.ContinueStatement>node);
-
-      case typescript.SyntaxKind.ExpressionStatement:
-        return statements.compileExpressionStatement(this, <typescript.ExpressionStatement>node);
-
-      case typescript.SyntaxKind.ReturnStatement:
-        return statements.compileReturn(this, <typescript.ReturnStatement>node);
-
-    }
-
-    this.error(node, "Unsupported statement node");
-    return op.unreachable();
+    return statements.compile(this, node);
   }
 
   /** Compiles an expression. */
   compileExpression(node: typescript.Expression, contextualType: reflection.Type): binaryen.Expression {
-    const op = this.module;
-
-    typescript.setReflectedType(node, contextualType);
-
-    switch (node.kind) {
-
-      case typescript.SyntaxKind.ParenthesizedExpression:
-        return expressions.compileParenthesized(this, <typescript.ParenthesizedExpression>node, contextualType);
-
-      case typescript.SyntaxKind.AsExpression:
-        return expressions.compileAs(this, <typescript.AsExpression>node, contextualType);
-
-      case typescript.SyntaxKind.BinaryExpression:
-        return expressions.compileBinary(this, <typescript.BinaryExpression>node, contextualType);
-
-      case typescript.SyntaxKind.PrefixUnaryExpression:
-        return expressions.compilePrefixUnary(this, <typescript.PrefixUnaryExpression>node, contextualType);
-
-      case typescript.SyntaxKind.PostfixUnaryExpression:
-        return expressions.compilePostfixUnary(this, <typescript.PostfixUnaryExpression>node, contextualType);
-
-      case typescript.SyntaxKind.Identifier:
-        return expressions.compileIdentifier(this, <typescript.Identifier>node, contextualType);
-
-      case typescript.SyntaxKind.PropertyAccessExpression:
-        return expressions.compilePropertyAccess(this, <typescript.PropertyAccessExpression>node, contextualType);
-
-      case typescript.SyntaxKind.ElementAccessExpression:
-        return expressions.compileElementAccess(this, <typescript.ElementAccessExpression>node, contextualType);
-
-      case typescript.SyntaxKind.ConditionalExpression:
-        return expressions.compileConditional(this, <typescript.ConditionalExpression>node, contextualType);
-
-      case typescript.SyntaxKind.CallExpression:
-        return expressions.compileCall(this, <typescript.CallExpression>node, contextualType);
-
-      case typescript.SyntaxKind.NewExpression:
-        return expressions.compileNew(this, <typescript.NewExpression>node, contextualType);
-
-      case typescript.SyntaxKind.ThisKeyword:
-        if (!this.currentFunction.isInstance)
-          this.error(node, "'this' used in non-instance context");
-        return op.getLocal(0, binaryen.typeOf(this.uintptrType, this.uintptrSize));
-
-      case typescript.SyntaxKind.TrueKeyword:
-      case typescript.SyntaxKind.FalseKeyword:
-      case typescript.SyntaxKind.NullKeyword:
-      case typescript.SyntaxKind.NumericLiteral:
-      case typescript.SyntaxKind.StringLiteral:
-        return expressions.compileLiteral(this, <typescript.LiteralExpression>node, contextualType);
-    }
-
-    this.error(node, "Unsupported expression node");
-    typescript.setReflectedType(node, contextualType);
-    return op.unreachable();
+    return expressions.compile(this, node, contextualType);
   }
 
   /** Wraps an expression with a conversion where necessary. */
