@@ -8,8 +8,8 @@
  (export "testUlong" (func $testUlong))
  (func $testSbyte (type $i) (result i32)
   (return
-   (i32.shl
-    (i32.shr_s
+   (i32.shr_s
+    (i32.shl
      (i32.add
       (i32.const -1)
       (i32.const 1)
@@ -33,8 +33,8 @@
  )
  (func $testShort (type $i) (result i32)
   (return
-   (i32.shl
-    (i32.shr_s
+   (i32.shr_s
+    (i32.shl
      (i32.add
       (i32.const -1)
       (i32.const 1)

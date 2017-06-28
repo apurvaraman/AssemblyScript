@@ -1056,8 +1056,8 @@ export class Compiler {
 
     if (toType.isSigned) { // sign-extend
 
-      return op.i32.shl(
-        op.i32.shr_s(
+      return op.i32.shr_s(
+        op.i32.shl(
           expr,
           op.i32.const(<number>toType.shift32)
         ),
