@@ -9,7 +9,7 @@ var isDev = fs.existsSync(__dirname + "/../src/index.ts") && path.basename(path.
 
 if (isDev) {
   require("ts-node/register");
-  assemblyscript = require("../src");
+  assemblyscript = require("../out");
 } else
   assemblyscript = require("../dist/assemblyscript");
 
