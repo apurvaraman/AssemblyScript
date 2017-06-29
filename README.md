@@ -1,7 +1,7 @@
 ![AssemblyScript](https://raw.githubusercontent.com/dcodeIO/AssemblyScript/master/logo.png)
 ==============
 
-[AssemblyScript](https://github.com/dcodeIO/AssemblyScript) defines a subset of [TypeScript](https://github.com/Microsoft/TypeScript) that it compiles to [WebAssembly](http://webassembly.org/). It aims to provide everyone with an existing background in TypeScript and standard JavaScript-APIs with a comfortable way to compile to WebAssembly, eliminating the need to switch between languages or to learn new ones just for this purpose.
+[AssemblyScript](https://github.com/dcodeIO/AssemblyScript) defines a subset of [TypeScript](http://www.typescriptlang.org) that it compiles to [WebAssembly](http://webassembly.org). It aims to provide everyone with an existing background in TypeScript and standard JavaScript-APIs with a comfortable way to compile to WebAssembly, eliminating the need to switch between languages or to learn new ones just for this purpose.
 
 Try it out in your browser: [dcode.io/AssemblyScript](http://dcode.io/AssemblyScript/)
 

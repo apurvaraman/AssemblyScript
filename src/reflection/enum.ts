@@ -19,6 +19,7 @@ export class Enum {
   constructor(name: string, declaration: typescript.EnumDeclaration) {
     this.name = name;
     this.declaration = declaration;
+    this.values = {};
   }
 
   /** Initializes the enum and its values. */

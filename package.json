@@ -30,7 +30,8 @@
     "build:bundle": "tsc -P src && node scripts/build-bundle",
     "build": "npm run lint && npm run build:library && npm run build:bundle",
     "lint": "tslint --config tslint.json src/**/*.ts cli/**/*.ts assembly.d.ts",
-    "test": "ts-node tests | tap-spec",
+    "test": "ts-node tests",
+    "test:spec": "ts-node tests | tap-spec",
     "docs": "typedoc --tsconfig src/tsconfig.json --mode modules --name \"AssemblyScript API Documentation\" --out docs/api/ --readme none --ignoreCompilerErrors --excludeNotExported --excludePrivate"
   },
   "dependencies": {

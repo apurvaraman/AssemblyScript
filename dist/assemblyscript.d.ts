@@ -972,10 +972,6 @@ declare module 'assemblyscript/reflection/type' {
       kind: TypeKind;
       /** Size in linear memory. */
       size: number;
-      /** Shift operand in conversions to 32-bit values. */
-      shift32?: number;
-      /** Mask used in conversions to 32-bit values. */
-      mask32?: number;
       /** The underlying class, if a pointer. */
       underlyingClass?: Class;
       /** Constructs a new reflected type. Not meant to introduce any types other than the core types. */

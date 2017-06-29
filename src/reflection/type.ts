@@ -26,10 +26,6 @@ export class Type {
   kind: TypeKind;
   /** Size in linear memory. */
   size: number;
-  /** Shift operand in conversions to 32-bit values. */
-  shift32?: number;
-  /** Mask used in conversions to 32-bit values. */
-  mask32?: number;
   /** The underlying class, if a pointer. */
   underlyingClass?: Class;
 
@@ -38,14 +34,6 @@ export class Type {
     this.kind = kind;
     this.size = size;
     this.underlyingClass = underlyingClass;
-
-    if (this.isByte || this.isShort) {
-      this.shift32 = 32 - (size << 3);
-      this.mask32 =  ~0 >>> this.shift32;
-    } else if (this.kind === TypeKind.bool) {
-      this.mask32 = 1;
-      this.shift32 = 31;
-    }
   }
 
   /* get logAlignment(): number {

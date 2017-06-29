@@ -7,20 +7,39 @@ import * as minimist from "minimist";
 import * as util from "./util";
 
 const argv = minimist(process.argv.slice(2), {
-  default: { "create": false },
-  boolean: [ "create" ]
+  default: { "create": false, "src": true, "dist": true },
+  boolean: [ "help", "create", "src", "dist" ]
 });
+
+const EUSAGE = 1;
+
+if (argv.help) {
+  process.stderr.write([
+    "Usage: npm test -- [options]",
+    "",
+    chalk.reset.white.bold("Options:"),
+    " --create               Creates missing fixtures from the current runs output.",
+    " --no-src               Does not test the sources.",
+    " --no-dist              Does not test the distribution.",
+    "",
+    "For pretty-printed output, run: npm run test:spec",
+    ""
+  ].join("\n"));
+  process.exit(EUSAGE);
+}
 
 // test sources
 import Compiler from "../src/compiler";
 import * as binaryen from "../src/binaryen";
 import * as typescript from "../src/typescript";
 import * as wabt from "../src/wabt";
-runTests("src", Compiler, binaryen, typescript, wabt);
+if (argv.src !== false)
+  runTests("src", Compiler, binaryen, typescript, wabt);
 
 // test distribution
 import * as dist from "..";
-runTests("dist", dist.Compiler, dist.binaryen, dist.typescript, dist.wabt);
+if (argv.dist !== false)
+  runTests("dist", dist.Compiler, dist.binaryen, dist.typescript, dist.wabt);
 
 // common test runner for both source and the distribution files
 function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, wabt: any) {
