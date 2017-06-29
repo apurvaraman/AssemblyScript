@@ -324,6 +324,7 @@ declare module 'assemblyscript/expressions' {
     * @module assemblyscript/expressions
     * @preferred
     */ /** */
+  export * from "assemblyscript/expressions/array";
   export * from "assemblyscript/expressions/as";
   export * from "assemblyscript/expressions/binary";
   export * from "assemblyscript/expressions/call";
@@ -396,6 +397,7 @@ declare module 'assemblyscript/reflection' {
 declare module 'assemblyscript/typescript' {
   import * as reflection from "assemblyscript/reflection";
   import * as ts from "assemblyscript/--/lib/typescript/build";
+  export import NumericLiteral = ts.NumericLiteral;
   export import ArrayTypeNode = ts.ArrayTypeNode;
   export import AsExpression = ts.AsExpression;
   export import BinaryExpression = ts.BinaryExpression;
@@ -426,6 +428,7 @@ declare module 'assemblyscript/typescript' {
   export import Identifier = ts.Identifier;
   export import IfStatement = ts.IfStatement;
   export import LiteralExpression = ts.LiteralExpression;
+  export import ArrayLiteralExpression = ts.ArrayLiteralExpression;
   export import MethodDeclaration = ts.MethodDeclaration;
   export import NewExpression = ts.NewExpression;
   export import NodeArray = ts.NodeArray;
@@ -558,6 +561,15 @@ declare module 'assemblyscript/wabt' {
   }
   /** Converts WebAssembly text format using stack syntax to a binary. */
   export function wastToWasm(text: string, options?: IWastToWasmOptions): Uint8Array;
+}
+
+declare module 'assemblyscript/expressions/array' {
+  /** @module assemblyscript/expressions */ /** */
+  import * as binaryen from "assemblyscript/binaryen";
+  import Compiler from "assemblyscript/compiler";
+  import * as reflection from "assemblyscript/reflection";
+  import * as typescript from "assemblyscript/typescript";
+  export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type): binaryen.Expression;
 }
 
 declare module 'assemblyscript/expressions/as' {

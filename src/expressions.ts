@@ -4,6 +4,7 @@
  * @preferred
  */ /** */
 
+export * from "./expressions/array";
 export * from "./expressions/as";
 export * from "./expressions/binary";
 export * from "./expressions/call";
@@ -24,6 +25,7 @@ import Compiler from "./compiler";
 import * as reflection from "./reflection";
 import * as typescript from "./typescript";
 import {
+  compileArrayLiteral,
   compileAs,
   compileBinary,
   compileCall,
@@ -90,6 +92,8 @@ export function compile(compiler: Compiler, node: typescript.Expression, context
     case typescript.SyntaxKind.NumericLiteral:
     case typescript.SyntaxKind.StringLiteral:
       return compileLiteral(compiler, <typescript.LiteralExpression>node, contextualType);
+    case typescript.SyntaxKind.ArrayLiteralExpression:
+      return compileArrayLiteral(compiler, <typescript.ArrayLiteralExpression>node, contextualType);
   }
 
   compiler.error(node, "Unsupported expression node", "SyntaxKind " + node.kind);

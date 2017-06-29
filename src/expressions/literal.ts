@@ -27,7 +27,12 @@ export function compileLiteral(compiler: Compiler, node: typescript.LiteralExpre
 
     case typescript.SyntaxKind.NumericLiteral:
     {
-      let text = typescript.getTextOfNode(node); // cannot use 'node.text' because it is preprocessed (breaks longs)
+      let text;
+      if (node.end === node.pos) {
+        text = node.text;
+      } else {
+        text = typescript.getTextOfNode(node); // cannot use 'node.text' because it is preprocessed (breaks longs)
+      }
       let intValue: number;
       let intRadix: number = 10;
 
