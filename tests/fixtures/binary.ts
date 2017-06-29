@@ -1,5 +1,5 @@
-export function add2(a: int): int {
-  let list: int[] = [1, 2, 3];
+export function arrayTest(a: int): int {
+  let list: int[] = new Array(3);
   list[0] = 1;
   return list[0];
 }

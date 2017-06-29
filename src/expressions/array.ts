@@ -4,21 +4,20 @@ import * as binaryen from "../binaryen";
 import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
-import * as tes from "../../lib/typescript/build";
 
 export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type): binaryen.Expression {
     const op = compiler.module;
 
     typescript.setReflectedType(node, contextualType);
-    const sizeArgumentNode = <typescript.NumericLiteral>tes.createNode(typescript.SyntaxKind.NumericLiteral, 0, 0);
-    sizeArgumentNode.text = String(node.elements.length);
-    const sizeArgument = compiler.maybeConvertValue(sizeArgumentNode, compiler.compileExpression(sizeArgumentNode, reflection.intType), typescript.getReflectedType(sizeArgumentNode), reflection.intType, false);
-         const uintptrCategory = binaryen.categoryOf(compiler.uintptrType, compiler.module, compiler.uintptrSize);
-         const newsize = compiler.currentFunction.localsByName[".newsize"] || compiler.currentFunction.addLocal(".newsize", compiler.uintptrType);
-         const newptr = compiler.currentFunction.localsByName[".newptr"] || compiler.currentFunction.addLocal(".newptr", compiler.uintptrType);
-         const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
+    const sizeArgument = op.i32.const(node.elements.length);
+    const clazz = <reflection.Class>contextualType.underlyingClass;
+    const elementType = Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type);
+    const uintptrCategory = binaryen.categoryOf(compiler.uintptrType, compiler.module, compiler.uintptrSize);
+    const newsize = compiler.currentFunction.localsByName[".newsize"] || compiler.currentFunction.addLocal(".newsize", compiler.uintptrType);
+    const newptr = compiler.currentFunction.localsByName[".newptr"] || compiler.currentFunction.addLocal(".newptr", compiler.uintptrType);
+    const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
 
-           return op.block("", [
+    return op.block("", [
      op.i32.store(
       0,
       reflection.uintType.size,
@@ -28,7 +27,7 @@ export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLi
             uintptrCategory.add(
               binaryen.valueOf(compiler.uintptrType, op, reflection.uintType.size), // length as an (u)int
               uintptrCategory.mul(
-                binaryen.valueOf(compiler.uintptrType, op, 0),
+                binaryen.valueOf(compiler.uintptrType, op, elementType[0].size),
                 op.teeLocal(newsize.index, sizeArgument)
               )
             )
