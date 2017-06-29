@@ -3,6 +3,8 @@ AssemblyScript Loader
 
 [AssemblyScript](https://github.com/dcodeIO/AssemblyScript)'s loader component to run and work with compiled WebAssembly modules, as a stand-alone module.
 
+[![npm](https://img.shields.io/npm/v/assemblyscript-loader.svg)](https://www.npmjs.com/package/assemblyscript-loader)
+
 Usage
 -----
 

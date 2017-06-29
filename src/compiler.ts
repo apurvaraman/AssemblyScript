@@ -1056,19 +1056,21 @@ export class Compiler {
 
     if (toType.isSigned) { // sign-extend
 
+      const shift = toType === reflection.sbyteType ? 24 : 16;
       return op.i32.shr_s(
         op.i32.shl(
           expr,
-          op.i32.const(<number>toType.shift32)
+          op.i32.const(shift)
         ),
-        op.i32.const(<number>toType.shift32)
+        op.i32.const(shift)
       );
 
     } else { // mask
 
+      const mask = toType === reflection.byteType ? 0xff : 0xffff;
       return op.i32.and(
         expr,
-        op.i32.const(<number>toType.mask32)
+        op.i32.const(mask)
       );
 
     }

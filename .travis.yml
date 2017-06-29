@@ -6,4 +6,4 @@ branches:
   only: master
 git:
   submodules: false
-script: npm test
+script: npm run test:spec

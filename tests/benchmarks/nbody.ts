@@ -91,8 +91,7 @@ class NBodySystem {
       pz += b.vz * m;
     }
     this.bodies = bodies;
-    const firstBody: Body = bodies[0];
-    firstBody.offsetMomentum(px, py, pz);
+    this.bodies[0].offsetMomentum(px, py, pz);
     // FIXME: this.bodies[0].offsetMomentum does not work
   }
 

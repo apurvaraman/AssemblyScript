@@ -97,17 +97,20 @@ export class Class extends ClassBase {
 
         case typescript.SyntaxKind.PropertyDeclaration:
         {
-          const propertyNode = <typescript.PropertyDeclaration>member;
-          if (propertyNode.type) {
-            const name = typescript.getTextOfNode(propertyNode.name);
-            const type = compiler.resolveType(propertyNode.type);
-            if (type) {
-              this.properties[name] = new Property(name, <typescript.PropertyDeclaration>member, type, this.size);
-              this.size += type.size;
+          const propertyDeclaration = <typescript.PropertyDeclaration>member;
+          if (propertyDeclaration.type) {
+            const propertyName = typescript.getTextOfNode(propertyDeclaration.name);
+            const propertyType = compiler.resolveType(propertyDeclaration.type);
+            if (propertyType) {
+              this.properties[propertyName] = new Property(propertyName, propertyDeclaration, propertyType, this.size);
+              if (typescript.isStatic(propertyDeclaration)) // static properties become globals, TODO: const
+                compiler.addGlobal(this.name + "." + propertyName, propertyType, true, propertyDeclaration.initializer);
+              else
+                this.size += propertyType.size;
             } else
-              compiler.error(propertyNode.type, "Unresolvable type");
+              compiler.error(propertyDeclaration.type, "Unresolvable type");
           } else
-            compiler.error(propertyNode, "Type expected");
+            compiler.error(propertyDeclaration.name, "Type expected");
           break;
         }
 
