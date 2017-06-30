@@ -17,7 +17,7 @@ import * as library from "./library";
 // With a little help from "Find all references" the following list aims to provide an answer to
 // the interesting question "Which parts of TypeScript do we actually use, and where?".
 
-export import NumericLiteral = ts.NumericLiteral;
+export import ArrayLiteralExpression = ts.ArrayLiteralExpression;
 export import ArrayTypeNode = ts.ArrayTypeNode;
 export import AsExpression = ts.AsExpression;
 export import BinaryExpression = ts.BinaryExpression;
@@ -49,7 +49,6 @@ export import FunctionDeclaration = ts.FunctionDeclaration;
 export import Identifier = ts.Identifier;
 export import IfStatement = ts.IfStatement;
 export import LiteralExpression = ts.LiteralExpression;
-export import ArrayLiteralExpression = ts.ArrayLiteralExpression;
 export import MethodDeclaration = ts.MethodDeclaration;
        import ModifierFlags = ts.ModifierFlags;
        import ModuleKind = ts.ModuleKind;
@@ -57,6 +56,8 @@ export import NewExpression = ts.NewExpression;
 export import NodeArray = ts.NodeArray;
 export import NodeFlags = ts.NodeFlags;
 export import Node = ts.Node;
+export import NumericLiteral = ts.NumericLiteral;
+export import OmittedExpression = ts.OmittedExpression;
 export import ParameterDeclaration = ts.ParameterDeclaration;
 export import ParenthesizedExpression = ts.ParenthesizedExpression;
 export import PostfixUnaryExpression = ts.PostfixUnaryExpression;

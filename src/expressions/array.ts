@@ -4,6 +4,8 @@ import * as binaryen from "../binaryen";
 import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
+import * as expressions from "../expressions";
+import * as type from "../reflection/type";
 
 export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type): binaryen.Expression {
     const op = compiler.module;
@@ -52,23 +54,94 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
   const localIndexOfArray = (compiler.currentFunction.localsByName[arrayName]).index;
   const clazz = <reflection.Class>contextualType.underlyingClass;
   const elementTypeSize = (Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type))[0].size;
-  const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
+  const elementType = (Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type))[0];
 
   for (let i = 0; i < node.elements.length; i++) {
       const element = node.elements[i];
-      initializers.push(
-        op.i32.store(
-          0,
-          elementTypeSize,
-          op.i32.add(
-            op.i32.mul(
-              op.i32.const(i + 1),
-              op.i32.const(i === 0? compiler.uintptrSize : elementTypeSize)
-            ),
-            op.getLocal(localIndexOfArray, binaryenPtrType)
-          ),
-          op.i32.const(parseInt(typescript.getTextOfNode(element), undefined))
-        )
-      );
+      switch (elementType) {
+          case(type.sbyteType):
+          case(type.byteType):
+          case(type.shortType):
+          case(type.ushortType):
+          case(type.uintType):
+          case(type.uintptrType32):
+          case(type.uintptrType64):
+          case(type.intType):
+            initializers.push(
+              op.i32.store(
+                0,
+                elementTypeSize,
+                getMemoryIndexOfElementArray(compiler, elementTypeSize, localIndexOfArray, i),
+                expressions.compile(compiler, element, elementType)
+              )
+            );
+            break;
+          case(type.doubleType):
+            initializers.push(
+              op.f64.store(
+                0,
+                elementTypeSize,
+                getMemoryIndexOfElementArray(compiler, elementTypeSize, localIndexOfArray, i),
+                expressions.compile(compiler, element, elementType)
+              )
+            );
+            break;
+          case(type.floatType):
+            initializers.push(
+              op.f32.store(
+                0,
+                elementTypeSize,
+                getMemoryIndexOfElementArray(compiler, elementTypeSize, localIndexOfArray, i),
+                expressions.compile(compiler, element, elementType)
+              )
+            );
+            break;
+          case(type.ulongType):
+          case(type.longType):
+            initializers.push(
+              op.i64.store(
+                0,
+                elementTypeSize,
+                getMemoryIndexOfElementArray(compiler, elementTypeSize, localIndexOfArray, i),
+                expressions.compile(compiler, element, elementType)
+              )
+            );
+            break;
+        }
+      }
+}
+
+export function getMemoryIndexOfElementArray(compiler: Compiler, elementTypeSize: number, localIndexOfArray: number, elementIndex: number): binaryen.I32Expression {
+  const op = compiler.module;
+  const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
+     return op.i32.add(
+              op.i32.mul(
+                op.i32.const(elementIndex + 1),
+                op.i32.const(elementIndex === 0? compiler.uintptrSize : elementTypeSize)
+              ),
+              op.getLocal(localIndexOfArray, binaryenPtrType)
+            );
+}
+
+export function compileVoidAsArrayElement(compiler: Compiler, elementType: reflection.Type): binaryen.Expression {
+  const op = compiler.module;
+  switch (elementType) {
+    case(type.sbyteType):
+    case(type.byteType):
+    case(type.shortType):
+    case(type.ushortType):
+    case(type.uintType):
+    case(type.uintptrType32):
+    case(type.uintptrType64):
+    case(type.intType):
+      return op.i32.const(0);
+    case(type.ulongType):
+    case(type.longType):
+      return op.i64.const(0, 0);
+    case(type.doubleType):
+      return op.f32.const(0);
+    case(type.floatType):
+      return op.f64.const(0);
   }
+  throw Error("unexpected type");
 }

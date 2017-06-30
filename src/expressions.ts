@@ -37,7 +37,8 @@ import {
   compileParenthesized,
   compilePostfixUnary,
   compilePrefixUnary,
-  compilePropertyAccess
+  compilePropertyAccess,
+  compileVoidAsArrayElement
 } from "./expressions";
 
 /** Compiles an expression. */
@@ -94,6 +95,13 @@ export function compile(compiler: Compiler, node: typescript.Expression, context
       return compileLiteral(compiler, <typescript.LiteralExpression>node, contextualType);
     case typescript.SyntaxKind.ArrayLiteralExpression:
       return compileArrayLiteral(compiler, <typescript.ArrayLiteralExpression>node, contextualType);
+    case typescript.SyntaxKind.OmittedExpression:
+      if (node.parent) {
+        switch (node.parent.kind) {
+          case(typescript.SyntaxKind.ArrayLiteralExpression):
+            return compileVoidAsArrayElement(compiler, contextualType);
+        }
+      }
   }
 
   compiler.error(node, "Unsupported expression node", "SyntaxKind " + node.kind);
