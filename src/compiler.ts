@@ -10,6 +10,7 @@ import Profiler from "./profiler";
 import * as reflection from "./reflection";
 import * as statements from "./statements";
 import * as typescript from "./typescript";
+import * as array from "./expressions/array";
 
 // Malloc, free, etc. is present as a base64 encoded blob and prepared once when required.
 let mallocWasm: Uint8Array;
@@ -474,6 +475,19 @@ export class Compiler {
             )
           )
         );
+
+        if (initializerNode.kind === typescript.SyntaxKind.ArrayLiteralExpression) {
+            let declarationTypeName;
+            const parentNode = <typescript.VariableDeclaration>initializerNode.parent;
+            if (initializerNode.parent) {
+              const declarationName = typescript.getTextOfNode(parentNode.name);
+              if (parentNode.type) {
+                declarationTypeName = typescript.getTextOfNode(parentNode.type);
+                const declarationType = this.currentFunction && this.currentFunction.typeArguments[declarationTypeName] && this.currentFunction.typeArguments[declarationTypeName].type || this.resolveType(parentNode.type);
+                array.initializeElementsOfArray(this, <typescript.ArrayLiteralExpression>initializerNode, declarationType, declarationName, this.globalInitializers);
+              }
+            }
+      }
 
         this.currentFunction = previousFunction;
       } else

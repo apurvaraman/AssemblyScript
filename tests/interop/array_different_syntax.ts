@@ -1,7 +1,7 @@
 //! { "memoryModel": "exportmalloc" }
 
 let a: int[] = [1, 2, 3]; 
-let c: float[] = [0.5, , 6.0, 7.2];
+let c: float[] = [0.5, , 6.0, 7.2, 8.54];
 let d: double[] = [4.3, 4, 8, 0.000009];
 let e: long[] = [];
 
@@ -30,5 +30,5 @@ export function getDoubleArrElem(val: uint): double{
 }
 
 export function getLongArrElem(val: uint): long{
-    return e[val];
+    return e[val]; //Should give an error
 }

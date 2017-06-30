@@ -51,7 +51,6 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
 
   typescript.setReflectedType(node, contextualType);
 
-  const localIndexOfArray = (compiler.currentFunction.localsByName[arrayName]).index;
   const clazz = <reflection.Class>contextualType.underlyingClass;
   const elementTypeSize = (Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type))[0].size;
   const elementType = (Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type))[0];
@@ -71,7 +70,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
               op.i32.store(
                 0,
                 elementTypeSize,
-                getMemoryIndexOfElementArray(compiler, elementTypeSize, localIndexOfArray, i),
+                getMemoryIndexOfElementArray(compiler, elementTypeSize, i, arrayName),
                 expressions.compile(compiler, element, elementType)
               )
             );
@@ -81,7 +80,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
               op.f64.store(
                 0,
                 elementTypeSize,
-                getMemoryIndexOfElementArray(compiler, elementTypeSize, localIndexOfArray, i),
+                getMemoryIndexOfElementArray(compiler, elementTypeSize, i, arrayName),
                 expressions.compile(compiler, element, elementType)
               )
             );
@@ -91,7 +90,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
               op.f32.store(
                 0,
                 elementTypeSize,
-                getMemoryIndexOfElementArray(compiler, elementTypeSize, localIndexOfArray, i),
+                getMemoryIndexOfElementArray(compiler, elementTypeSize, i, arrayName),
                 expressions.compile(compiler, element, elementType)
               )
             );
@@ -102,7 +101,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
               op.i64.store(
                 0,
                 elementTypeSize,
-                getMemoryIndexOfElementArray(compiler, elementTypeSize, localIndexOfArray, i),
+                getMemoryIndexOfElementArray(compiler, elementTypeSize, i, arrayName),
                 expressions.compile(compiler, element, elementType)
               )
             );
@@ -111,15 +110,16 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
       }
 }
 
-export function getMemoryIndexOfElementArray(compiler: Compiler, elementTypeSize: number, localIndexOfArray: number, elementIndex: number): binaryen.I32Expression {
+export function getMemoryIndexOfElementArray(compiler: Compiler, elementTypeSize: number, elementIndex: number, nameOfArray: string): binaryen.I32Expression {
   const op = compiler.module;
   const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
+
      return op.i32.add(
               op.i32.mul(
                 op.i32.const(elementIndex + 1),
                 op.i32.const(elementIndex === 0? compiler.uintptrSize : elementTypeSize)
               ),
-              op.getLocal(localIndexOfArray, binaryenPtrType)
+              compiler.currentFunction === compiler.startFunction ? op.getGlobal(nameOfArray, binaryenPtrType) : op.getLocal(compiler.currentFunction.localsByName[nameOfArray].index, binaryenPtrType)
             );
 }
 
@@ -139,9 +139,9 @@ export function compileVoidAsArrayElement(compiler: Compiler, elementType: refle
     case(type.longType):
       return op.i64.const(0, 0);
     case(type.doubleType):
-      return op.f32.const(0);
-    case(type.floatType):
       return op.f64.const(0);
+    case(type.floatType):
+      return op.f32.const(0);
   }
   throw Error("unexpected type");
 }
