@@ -4,6 +4,7 @@ import * as binaryen from "../binaryen";
 import { Compiler } from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
+import * as array from "../expressions/array";
 
 export function compileVariable(compiler: Compiler, node: typescript.VariableStatement): binaryen.Statement {
   return compileVariableDeclarationList(compiler, node.declarationList);
@@ -29,8 +30,13 @@ export function compileVariableDeclarationList(compiler: Compiler, node: typescr
       continue;
     }
     const local = compiler.currentFunction.addLocal(declarationName, declarationType);
-    if (declaration.initializer)
-      initializers.push(op.setLocal(local.index, compiler.maybeConvertValue(declaration.initializer, compiler.compileExpression(declaration.initializer, declarationType), typescript.getReflectedType(declaration.initializer), declarationType, false)));
+    const initializer = declaration.initializer;
+    if (initializer) {
+      initializers.push(op.setLocal(local.index, compiler.maybeConvertValue(initializer, compiler.compileExpression(initializer, declarationType), typescript.getReflectedType(initializer), declarationType, false)));
+      if (initializer.kind === typescript.SyntaxKind.ArrayLiteralExpression) {
+        array.initializeElementsOfArray(compiler, <typescript.ArrayLiteralExpression>initializer, declarationType, declarationName, initializers);
+      }
+    }
   }
 
   return initializers.length === 0 ? op.nop()

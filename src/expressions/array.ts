@@ -43,3 +43,32 @@ export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLi
     op.getLocal(newptr.index, binaryenPtrType)
   ], binaryenPtrType);
 }
+
+export function initializeElementsOfArray(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type, arrayName: string, initializers: binaryen.Expression[]) {
+  const op = compiler.module;
+
+  typescript.setReflectedType(node, contextualType);
+
+  const localIndexOfArray = (compiler.currentFunction.localsByName[arrayName]).index;
+  const clazz = <reflection.Class>contextualType.underlyingClass;
+  const elementTypeSize = (Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type))[0].size;
+  const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
+
+  for (let i = 0; i < node.elements.length; i++) {
+      const element = node.elements[i];
+      initializers.push(
+        op.i32.store(
+          0,
+          elementTypeSize,
+          op.i32.add(
+            op.i32.mul(
+              op.i32.const(i + 1),
+              op.i32.const(i === 0? compiler.uintptrSize : elementTypeSize)
+            ),
+            op.getLocal(localIndexOfArray, binaryenPtrType)
+          ),
+          op.i32.const(parseInt(typescript.getTextOfNode(element), undefined))
+        )
+      );
+  }
+}

@@ -570,6 +570,7 @@ declare module 'assemblyscript/expressions/array' {
   import * as reflection from "assemblyscript/reflection";
   import * as typescript from "assemblyscript/typescript";
   export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type): binaryen.Expression;
+  export function initializeElementsOfArray(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type, arrayName: string, initializers: binaryen.Expression[]): void;
 }
 
 declare module 'assemblyscript/expressions/as' {

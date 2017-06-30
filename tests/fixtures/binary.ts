@@ -1,7 +1,6 @@
-export function arrayTest(a: int): int {
-  let list: int[] = new Array(3);
-  list[0] = 1;
-  return list[0];
+export function arrayTest1(a: int): int {
+  let list: int[] = [a, a+1, a+2, 4, 5]
+  return list[2];
 }
 
 
