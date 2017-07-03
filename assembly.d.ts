@@ -210,6 +210,7 @@ declare interface IArguments {}
 declare interface Number {}
 declare interface Object {}
 declare interface RegExp {}
+declare interface Symbol {}
 
 // Interfaces
 

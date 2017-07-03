@@ -78,6 +78,7 @@
 						<section class="tsd-index-section ">
 							<h3>Functions</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compile" class="tsd-kind-icon">compile</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compileas" class="tsd-kind-icon">compile<wbr>As</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compileassignment" class="tsd-kind-icon">compile<wbr>Assignment</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compileassignmentwithvalue" class="tsd-kind-icon">compile<wbr>Assignment<wbr>With<wbr>Value</a></li>
@@ -88,6 +89,7 @@
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compileidentifier" class="tsd-kind-icon">compile<wbr>Identifier</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compileliteral" class="tsd-kind-icon">compile<wbr>Literal</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compileload" class="tsd-kind-icon">compile<wbr>Load</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compileloadorstore" class="tsd-kind-icon">compile<wbr>Load<wbr>OrStore</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compilenew" class="tsd-kind-icon">compile<wbr>New</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compilenewarray" class="tsd-kind-icon">compile<wbr>New<wbr>Array</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_expressions.html#compilenewclass" class="tsd-kind-icon">compile<wbr>New<wbr>Class</a></li>
@@ -104,6 +106,40 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Functions</h2>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
+					<a name="compile" class="tsd-anchor"></a>
+					<h3>compile</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
+						<li class="tsd-signature tsd-kind-icon">compile<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.Expression</span>, contextualType<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions.ts#L43">expressions.ts:43</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles any supported expression.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>compiler: <a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a></h5>
+								</li>
+								<li>
+									<h5>node: <span class="tsd-signature-type">typescript.Expression</span></h5>
+								</li>
+								<li>
+									<h5>contextualType: <a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Expression</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
 					<a name="compileas" class="tsd-anchor"></a>
 					<h3>compile<wbr>As</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
@@ -113,9 +149,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/as.ts#L8">expressions/as.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/as.ts#L9">expressions/as.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles an &#39;as&#39; expression explicitly converting from one type to another.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -142,9 +183,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/binary.ts#L379">expressions/binary.ts:379</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/binary.ts#L383">expressions/binary.ts:383</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a binary assignment expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -171,9 +217,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/binary.ts#L384">expressions/binary.ts:384</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/binary.ts#L389">expressions/binary.ts:389</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a binary assignment expression with a pre-computed value.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -203,9 +254,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/binary.ts#L10">expressions/binary.ts:10</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/binary.ts#L11">expressions/binary.ts:11</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a binary expression. Covers addition, multiplication and so on.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -232,9 +288,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/call.ts#L9">expressions/call.ts:9</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/call.ts#L10">expressions/call.ts:10</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a function call expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -261,9 +322,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/conditional.ts#L8">expressions/conditional.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/conditional.ts#L9">expressions/conditional.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a conditional (ternary) expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -284,15 +350,20 @@
 					<a name="compileelementaccess" class="tsd-anchor"></a>
 					<h3>compile<wbr>Element<wbr>Access</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
-						<li class="tsd-signature tsd-kind-icon">compile<wbr>Element<wbr>Access<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.ElementAccessExpression</span>, contextualType<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span></li>
+						<li class="tsd-signature tsd-kind-icon">compile<wbr>Element<wbr>Access<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.ElementAccessExpression</span>, contextualType<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a>, valueNode<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">typescript.Expression</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/elementaccess.ts#L9">expressions/elementaccess.ts:9</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/elementaccess.ts#L11">expressions/elementaccess.ts:11</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles an element access expression. Sets the element&#39;s value to <code>valueNode</code> if specified, otherwise gets it.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -303,6 +374,9 @@
 								</li>
 								<li>
 									<h5>contextualType: <a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a></h5>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> valueNode: <span class="tsd-signature-type">typescript.Expression</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Expression</span></h4>
@@ -319,9 +393,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/identifier.ts#L8">expressions/identifier.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/identifier.ts#L9">expressions/identifier.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles an identifier expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -348,9 +427,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/literal.ts#L9">expressions/literal.ts:9</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/literal.ts#L10">expressions/literal.ts:10</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a literal expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -380,9 +464,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/helpers/load.ts#L8">expressions/helpers/load.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/helpers/load.ts#L9">expressions/helpers/load.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Helper compiling a load operation.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -406,6 +495,52 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
+					<a name="compileloadorstore" class="tsd-anchor"></a>
+					<h3>compile<wbr>Load<wbr>OrStore</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
+						<li class="tsd-signature tsd-kind-icon">compile<wbr>Load<wbr>OrStore<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.Expression</span>, type<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span>, offset<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, valueToSet<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">binaryen.Expression</span>, valueToSetContextualType<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">reflection.Type</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/helpers/loadorstore.ts#L12">expressions/helpers/loadorstore.ts:12</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Helper compiling a load operation if <code>valueToSet</code> has been omitted, otherwise a store operation.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>compiler: <a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a></h5>
+								</li>
+								<li>
+									<h5>node: <span class="tsd-signature-type">typescript.Expression</span></h5>
+								</li>
+								<li>
+									<h5>type: <a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a></h5>
+								</li>
+								<li>
+									<h5>ptr: <span class="tsd-signature-type">Expression</span></h5>
+								</li>
+								<li>
+									<h5>offset: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> valueToSet: <span class="tsd-signature-type">binaryen.Expression</span></h5>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> valueToSetContextualType: <span class="tsd-signature-type">reflection.Type</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Expression</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
 					<a name="compilenew" class="tsd-anchor"></a>
 					<h3>compile<wbr>New</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
@@ -415,9 +550,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/new.ts#L8">expressions/new.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/new.ts#L9">expressions/new.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a &#39;new&#39; expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -444,9 +584,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/new.ts#L119">expressions/new.ts:119</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/new.ts#L124">expressions/new.ts:124</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a &#39;new&#39; array expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -473,9 +618,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/new.ts#L68">expressions/new.ts:68</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/new.ts#L72">expressions/new.ts:72</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a &#39;new&#39; class expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -502,9 +652,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/parenthesized.ts#L8">expressions/parenthesized.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/parenthesized.ts#L9">expressions/parenthesized.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a parenthesized expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -531,9 +686,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/postfixunary.ts#L8">expressions/postfixunary.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/postfixunary.ts#L9">expressions/postfixunary.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a unary postfix expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -560,9 +720,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/prefixunary.ts#L9">expressions/prefixunary.ts:9</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/prefixunary.ts#L10">expressions/prefixunary.ts:10</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a unary prefix expression.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -583,15 +748,20 @@
 					<a name="compilepropertyaccess" class="tsd-anchor"></a>
 					<h3>compile<wbr>Property<wbr>Access</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
-						<li class="tsd-signature tsd-kind-icon">compile<wbr>Property<wbr>Access<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.PropertyAccessExpression</span>, contextualType<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span></li>
+						<li class="tsd-signature tsd-kind-icon">compile<wbr>Property<wbr>Access<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.PropertyAccessExpression</span>, contextualType<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a>, valueNode<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">typescript.Expression</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/propertyaccess.ts#L9">expressions/propertyaccess.ts:9</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/propertyaccess.ts#L10">expressions/propertyaccess.ts:10</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a property access expression. Sets the property&#39;s value to <code>valueNode</code> if specified, otherwise gets it.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -603,6 +773,9 @@
 								<li>
 									<h5>contextualType: <a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a></h5>
 								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> valueNode: <span class="tsd-signature-type">typescript.Expression</span></h5>
+								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Expression</span></h4>
 						</li>
@@ -612,15 +785,20 @@
 					<a name="compilestore" class="tsd-anchor"></a>
 					<h3>compile<wbr>Store</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
-						<li class="tsd-signature tsd-kind-icon">compile<wbr>Store<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.Expression</span>, type<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span>, value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span>, offset<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span></li>
+						<li class="tsd-signature tsd-kind-icon">compile<wbr>Store<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.Expression</span>, type<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript_reflection.type.html" class="tsd-signature-type">Type</a>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span>, offset<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Expression</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/expressions/helpers/store.ts#L8">expressions/helpers/store.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/expressions/helpers/store.ts#L9">expressions/helpers/store.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Helper compiling a store operation.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -636,10 +814,10 @@
 									<h5>ptr: <span class="tsd-signature-type">Expression</span></h5>
 								</li>
 								<li>
-									<h5>value: <span class="tsd-signature-type">Expression</span></h5>
+									<h5>offset: <span class="tsd-signature-type">number</span></h5>
 								</li>
 								<li>
-									<h5>offset: <span class="tsd-signature-type">number</span></h5>
+									<h5>value: <span class="tsd-signature-type">Expression</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Expression</span></h4>
@@ -686,6 +864,9 @@
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
+						<a href="assemblyscript_expressions.html#compile" class="tsd-kind-icon">compile</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="assemblyscript_expressions.html#compileas" class="tsd-kind-icon">compile<wbr>As</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
@@ -714,6 +895,9 @@
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="assemblyscript_expressions.html#compileload" class="tsd-kind-icon">compile<wbr>Load</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module">
+						<a href="assemblyscript_expressions.html#compileloadorstore" class="tsd-kind-icon">compile<wbr>Load<wbr>OrStore</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="assemblyscript_expressions.html#compilenew" class="tsd-kind-icon">compile<wbr>New</a>

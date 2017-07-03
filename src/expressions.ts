@@ -11,6 +11,7 @@ export * from "./expressions/call";
 export * from "./expressions/conditional";
 export * from "./expressions/elementaccess";
 export * from "./expressions/helpers/load";
+export * from "./expressions/helpers/loadorstore";
 export * from "./expressions/helpers/store";
 export * from "./expressions/identifier";
 export * from "./expressions/literal";
@@ -41,7 +42,7 @@ import {
   compileVoidAsArrayElement
 } from "./expressions";
 
-/** Compiles an expression. */
+/** Compiles any supported expression. */
 export function compile(compiler: Compiler, node: typescript.Expression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
@@ -83,7 +84,9 @@ export function compile(compiler: Compiler, node: typescript.Expression, context
       return compileNew(compiler, <typescript.NewExpression>node, contextualType);
 
     case typescript.SyntaxKind.ThisKeyword:
-      if (!compiler.currentFunction.isInstance)
+      if (compiler.currentFunction.isInstance && compiler.currentFunction.parent)
+        typescript.setReflectedType(node, compiler.currentFunction.parent.type);
+      else
         compiler.error(node, "'this' used in non-instance context");
       return op.getLocal(0, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize));
 

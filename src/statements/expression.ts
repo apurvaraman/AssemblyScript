@@ -16,3 +16,5 @@ export function compileExpression(compiler: Compiler, node: typescript.Expressio
     ? expression
     : op.drop(expression);
 }
+
+export { compileExpression as default };

@@ -33,7 +33,7 @@ import {
   compileWhile
 } from "./statements";
 
-/** Compiles a statement. */
+/** Compiles any supported statement. */
 export function compile(compiler: Compiler, node: typescript.Statement): binaryen.Statement {
   const op = compiler.module;
 

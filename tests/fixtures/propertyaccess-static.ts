@@ -6,4 +6,5 @@ class A {
 
 export function test(): void {
   A.a;
+  A.a = 1;
 }

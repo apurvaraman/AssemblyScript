@@ -5,6 +5,7 @@ import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles a 'new' expression. */
 export function compileNew(compiler: Compiler, node: typescript.NewExpression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
@@ -65,6 +66,9 @@ export function compileNew(compiler: Compiler, node: typescript.NewExpression, c
   return op.unreachable();
 }
 
+export { compileNew as default };
+
+/** Compiles a 'new' class expression. */
 export function compileNewClass(compiler: Compiler, node: typescript.NewExpression, clazz: reflection.Class): binaryen.Expression {
   const op = compiler.module;
   const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
@@ -116,6 +120,7 @@ export function compileNewClass(compiler: Compiler, node: typescript.NewExpressi
   return ptr;
 }
 
+/** Compiles a 'new' array expression. */
 export function compileNewArray(compiler: Compiler, /* node: typescript.NewExpression, */ elementType: reflection.Type, sizeArgumentNode: typescript.Expression) {
   const op = compiler.module;
 

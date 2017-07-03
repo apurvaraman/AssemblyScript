@@ -20,6 +20,7 @@ block {
 } $break
 */
 
+/** Compiles a for loop statement. */
 export function compileFor(compiler: Compiler, node: typescript.ForStatement): binaryen.Statement {
   const op = compiler.module;
 
@@ -82,3 +83,5 @@ export function compileFor(compiler: Compiler, node: typescript.ForStatement): b
   compiler.leaveBreakContext();
   return op.block("break$" + label, context);
 }
+
+export { compileFor as default };
