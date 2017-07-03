@@ -30,7 +30,7 @@ export class Type {
   underlyingClass?: Class;
 
   /** Constructs a new reflected type. Not meant to introduce any types other than the core types. */
-  constructor(kind: TypeKind, size: number, underlyingClass?: Class) {
+   constructor(kind: TypeKind, size: number, underlyingClass?: Class) {
     this.kind = kind;
     this.size = size;
     this.underlyingClass = underlyingClass;
@@ -121,6 +121,8 @@ export const boolType = new Type(TypeKind.bool   , 4);
 export const floatType = new Type(TypeKind.float  , 4);
 /** Reflected 64-bit float type. */
 export const doubleType = new Type(TypeKind.double , 8);
+/** */
+export const uintptrType = new Type(TypeKind.uintptr  , 4);
 /** Reflected 32-bit pointer type. Relevant only when compiling for 32-bit WebAssembly. */
 export const uintptrType32 = new Type(TypeKind.uintptr, 4);
 /** Reflected 64-bit pointer type. Relevant only when compiling for 64-bit WebAssembly. */

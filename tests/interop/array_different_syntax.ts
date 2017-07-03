@@ -1,6 +1,6 @@
-export function stringArray3(a: string) : string {
-    let list : string[] = ["hello", "how are you?"];
-    return list[1];
+export function stringArray43(a: int) : string {
+    let list : string[] = ["hey", "hello", "how are you"];
+    return list[a];
 }
 
 

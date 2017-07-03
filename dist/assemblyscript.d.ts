@@ -1041,6 +1041,8 @@ declare module 'assemblyscript/reflection/type' {
   export const floatType: Type;
   /** Reflected 64-bit float type. */
   export const doubleType: Type;
+  /** */
+  export const uintptrType: Type;
   /** Reflected 32-bit pointer type. Relevant only when compiling for 32-bit WebAssembly. */
   export const uintptrType32: Type;
   /** Reflected 64-bit pointer type. Relevant only when compiling for 64-bit WebAssembly. */
