@@ -5,6 +5,7 @@ import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles an if statement. */
 export function compileIf(compiler: Compiler, node: typescript.IfStatement): binaryen.Statement {
   const op = compiler.module;
 
@@ -14,3 +15,5 @@ export function compileIf(compiler: Compiler, node: typescript.IfStatement): bin
     node.elseStatement ? compiler.compileStatement(node.elseStatement) : undefined
   );
 }
+
+export { compileIf as default };

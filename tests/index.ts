@@ -72,7 +72,7 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
         if (messages.length)
           process.stderr.write(messages.replace(/^/mg, "> ") + "\n");
 
-        test.ok(module, "should not fail to compule");
+        test.ok(module, "should not fail to compile");
         if (module) {
           test.ok(module.validate(), "should validate");
 
@@ -143,7 +143,7 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
       if (messages.length)
         process.stderr.write(messages.replace(/^/mg, "> ") + "\n");
 
-      test.ok(module, name + ".ts should not fail to compule");
+      test.ok(module, name + ".ts should not fail to compile");
       if (!module) {
         test.end();
         return;

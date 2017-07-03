@@ -6,6 +6,7 @@ import * as Long from "long";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles a literal expression. */
 export function compileLiteral(compiler: Compiler, node: typescript.LiteralExpression, contextualType: reflection.Type, negate: boolean = false): binaryen.Expression {
   const op = compiler.module;
 
@@ -109,7 +110,7 @@ export function compileLiteral(compiler: Compiler, node: typescript.LiteralExpre
         case reflection.doubleType:
           return op.f64.const(intValue);
       }
-      throw Error("unexpected type");
+      throw Error("unexpected type: " + contextualType);
     }
 
     case typescript.SyntaxKind.StringLiteral:

@@ -76,6 +76,7 @@ export interface BinaryenExpressionPair {
   1: binaryen.Expression;
 }
 
+/** Compiles a sign-agnostic rotate left operation. */
 export function rotl(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
   const leftType = typescript.getReflectedType(node[0]);
@@ -99,6 +100,7 @@ export function rotl(compiler: Compiler, node: TypeScriptExpressionPair, expr: B
   throw Error("unsupported operation");
 }
 
+/** Compiles a sign-agnostic rotate right operation. */
 export function rotr(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
 
@@ -122,6 +124,7 @@ export function rotr(compiler: Compiler, node: TypeScriptExpressionPair, expr: B
   throw Error("unsupported operation");
 }
 
+/** Compiles a sign-agnostic count leading zero bits operation. */
 export function clz(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -141,6 +144,7 @@ export function clz(compiler: Compiler, node: typescript.Expression, expr: binar
   throw Error("unsupported operation");
 }
 
+/** Compiles a sign-agnostic count tailing zero bits operation. */
 export function ctz(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -160,6 +164,7 @@ export function ctz(compiler: Compiler, node: typescript.Expression, expr: binar
   throw Error("unsupported operation");
 }
 
+/** Compiles a sign-agnostic count number of one bits operation. */
 export function popcnt(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -179,6 +184,7 @@ export function popcnt(compiler: Compiler, node: typescript.Expression, expr: bi
   throw Error("unsupported operation");
 }
 
+/** Compiles an absolute value operation. */
 export function abs(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -194,6 +200,7 @@ export function abs(compiler: Compiler, node: typescript.Expression, expr: binar
   throw Error("unsupported operation");
 }
 
+/** Compiles a ceiling operation. */
 export function ceil(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -209,6 +216,7 @@ export function ceil(compiler: Compiler, node: typescript.Expression, expr: bina
   throw Error("unsupported operation");
 }
 
+/** Compiles a floor operation. */
 export function floor(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -224,6 +232,7 @@ export function floor(compiler: Compiler, node: typescript.Expression, expr: bin
   throw Error("unsupported operation");
 }
 
+/** Compiles a square root operation. */
 export function sqrt(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -239,6 +248,7 @@ export function sqrt(compiler: Compiler, node: typescript.Expression, expr: bina
   throw Error("unsupported operation");
 }
 
+/** Compiles a round to the nearest integer towards zero operation. */
 export function trunc(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -254,6 +264,7 @@ export function trunc(compiler: Compiler, node: typescript.Expression, expr: bin
   throw Error("unsupported operation");
 }
 
+/** Compiles a round to the nearest integer tied to even operation. */
 export function nearest(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -269,6 +280,7 @@ export function nearest(compiler: Compiler, node: typescript.Expression, expr: b
   throw Error("unsupported operation");
 }
 
+/** Compiles a minimum of two floats operation. */
 export function min(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
 
@@ -288,6 +300,7 @@ export function min(compiler: Compiler, node: TypeScriptExpressionPair, expr: Bi
   throw Error("unsupported operation");
 }
 
+/** Compiles a maximum of two floats operation. */
 export function max(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
 
@@ -307,6 +320,7 @@ export function max(compiler: Compiler, node: TypeScriptExpressionPair, expr: Bi
   throw Error("unsupported operation");
 }
 
+/** Compiles a copysign operation that composes a float from the magnitude of `x` and the sign of `y`. */
 export function copysign(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
 
@@ -326,6 +340,7 @@ export function copysign(compiler: Compiler, node: TypeScriptExpressionPair, exp
   throw Error("unsupported operation");
 }
 
+/** Compiles a reinterpretation of a float as an int respectively of an int as a float. */
 export function reinterpret(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -352,11 +367,13 @@ export function reinterpret(compiler: Compiler, node: typescript.Expression, exp
   throw Error("unsupported operation");
 }
 
+/** Compiles a current memory operation. */
 export function current_memory(compiler: Compiler): binaryen.Expression {
   const op = compiler.module;
   return op.currentMemory();
 }
 
+/** Compiles a grow memory operation. */
 export function grow_memory(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -367,6 +384,7 @@ export function grow_memory(compiler: Compiler, node: typescript.Expression, exp
   throw Error("unsupported operation");
 }
 
+/** Compiles a sizeof operation determining the byte size of a type. */
 export function sizeof(compiler: Compiler, type: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
@@ -375,10 +393,12 @@ export function sizeof(compiler: Compiler, type: reflection.Type): binaryen.Expr
     : op.i64.const(type.size, 0);
 }
 
+/** Compiles an unsafe cast operation casting a value from one type to another. */
 export function unsafe_cast(expr: binaryen.Expression): binaryen.Expression {
   return expr;
 }
 
+/** Compiles a check for NaN operation. */
 export function isNaN(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
@@ -405,6 +425,7 @@ export function isNaN(compiler: Compiler, node: typescript.Expression, expr: bin
   );
 }
 
+/** Compiles a check for a finite number operation. */
 export function isFinite(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 

@@ -5,6 +5,7 @@ import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles a unary postfix expression. */
 export function compilePostfixUnary(compiler: Compiler, node: typescript.PostfixUnaryExpression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
@@ -49,3 +50,5 @@ export function compilePostfixUnary(compiler: Compiler, node: typescript.Postfix
   typescript.setReflectedType(node, contextualType);
   return op.unreachable();
 }
+
+export { compilePostfixUnary as default };

@@ -4,6 +4,7 @@ import * as binaryen from "../binaryen";
 import Compiler from "../compiler";
 import * as typescript from "../typescript";
 
+/** Compiles a break statement. */
 export function compileBreak(compiler: Compiler, node: typescript.BreakStatement | typescript.ContinueStatement): binaryen.Statement {
   const op = compiler.module;
 
@@ -14,3 +15,5 @@ export function compileBreak(compiler: Compiler, node: typescript.BreakStatement
     ) + compiler.currentBreakLabel
   );
 }
+
+export { compileBreak as default };

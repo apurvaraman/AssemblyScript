@@ -225,3 +225,5 @@ export function compileCall(compiler: Compiler, node: typescript.CallExpression,
   }
   return op.call(instance.name, argumentExpressions, binaryen.typeOf(instance.returnType, compiler.uintptrSize));
 }
+
+export { compileCall as default };

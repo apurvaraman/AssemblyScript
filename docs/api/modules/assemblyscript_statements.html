@@ -78,11 +78,12 @@
 						<section class="tsd-index-section ">
 							<h3>Functions</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compile" class="tsd-kind-icon">compile</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compileblock" class="tsd-kind-icon">compile<wbr>Block</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compilebreak" class="tsd-kind-icon">compile<wbr>Break</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compiledo" class="tsd-kind-icon">compile<wbr>Do</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compileempty" class="tsd-kind-icon">compile<wbr>Empty</a></li>
-								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compileexpressionstatement" class="tsd-kind-icon">compile<wbr>Expression<wbr>Statement</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compileexpression" class="tsd-kind-icon">compile<wbr>Expression</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compilefor" class="tsd-kind-icon">compile<wbr>For</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compileif" class="tsd-kind-icon">compile<wbr>If</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="assemblyscript_statements.html#compilereturn" class="tsd-kind-icon">compile<wbr>Return</a></li>
@@ -98,6 +99,37 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Functions</h2>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
+					<a name="compile" class="tsd-anchor"></a>
+					<h3>compile</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
+						<li class="tsd-signature tsd-kind-icon">compile<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.Statement</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Statement</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements.ts#L37">statements.ts:37</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles any supported statement.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>compiler: <a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a></h5>
+								</li>
+								<li>
+									<h5>node: <span class="tsd-signature-type">typescript.Statement</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Statement</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
 					<a name="compileblock" class="tsd-anchor"></a>
 					<h3>compile<wbr>Block</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
@@ -107,9 +139,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/block.ts#L7">statements/block.ts:7</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/block.ts#L8">statements/block.ts:8</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a block statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -133,9 +170,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/break.ts#L7">statements/break.ts:7</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/break.ts#L8">statements/break.ts:8</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a break statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -159,9 +201,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/do.ts#L17">statements/do.ts:17</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/do.ts#L18">statements/do.ts:18</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a do loop statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -185,9 +232,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/empty.ts#L6">statements/empty.ts:6</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/empty.ts#L7">statements/empty.ts:7</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles an empty statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -199,18 +251,23 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
-					<a name="compileexpressionstatement" class="tsd-anchor"></a>
-					<h3>compile<wbr>Expression<wbr>Statement</h3>
+					<a name="compileexpression" class="tsd-anchor"></a>
+					<h3>compile<wbr>Expression</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
-						<li class="tsd-signature tsd-kind-icon">compile<wbr>Expression<wbr>Statement<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.ExpressionStatement</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Statement</span></li>
+						<li class="tsd-signature tsd-kind-icon">compile<wbr>Expression<span class="tsd-signature-symbol">(</span>compiler<span class="tsd-signature-symbol">: </span><a href="../classes/assemblyscript.compiler.html" class="tsd-signature-type">Compiler</a>, node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">typescript.ExpressionStatement</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Statement</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/expression.ts#L8">statements/expression.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/expression.ts#L9">statements/expression.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles an expression statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -234,9 +291,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/for.ts#L23">statements/for.ts:23</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/for.ts#L24">statements/for.ts:24</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a for loop statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -260,9 +322,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/if.ts#L8">statements/if.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/if.ts#L9">statements/if.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles an if statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -286,9 +353,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/return.ts#L8">statements/return.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/return.ts#L9">statements/return.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a return statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -312,9 +384,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/switch.ts#L23">statements/switch.ts:23</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/switch.ts#L24">statements/switch.ts:24</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a switch statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -338,9 +415,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/variable.ts#L8">statements/variable.ts:8</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/variable.ts#L9">statements/variable.ts:9</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a variable declaration statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -364,9 +446,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/variable.ts#L12">statements/variable.ts:12</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/variable.ts#L16">statements/variable.ts:16</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a variable declaration list statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -390,9 +477,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/2e35afe/src/statements/while.ts#L19">statements/while.ts:19</a></li>
+									<li>Defined in <a href="https://github.com/dcodeIO/AssemblyScript/blob/32f987b/src/statements/while.ts#L20">statements/while.ts:20</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compiles a while loop statement.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -446,6 +538,9 @@
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
+						<a href="assemblyscript_statements.html#compile" class="tsd-kind-icon">compile</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="assemblyscript_statements.html#compileblock" class="tsd-kind-icon">compile<wbr>Block</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
@@ -458,7 +553,7 @@
 						<a href="assemblyscript_statements.html#compileempty" class="tsd-kind-icon">compile<wbr>Empty</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
-						<a href="assemblyscript_statements.html#compileexpressionstatement" class="tsd-kind-icon">compile<wbr>Expression<wbr>Statement</a>
+						<a href="assemblyscript_statements.html#compileexpression" class="tsd-kind-icon">compile<wbr>Expression</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="assemblyscript_statements.html#compilefor" class="tsd-kind-icon">compile<wbr>For</a>

@@ -27,9 +27,13 @@ export abstract class FunctionBase {
   /** Tests if this function is exported to the embedder. */
   get isExport(): boolean { return typescript.isExport(this.declaration); }
   /** Tests if this function is an instance member / not static. */
-  get isInstance(): boolean { return !typescript.isStatic(this.declaration) && (this.declaration.kind === typescript.SyntaxKind.Constructor || this.declaration.kind === typescript.SyntaxKind.MethodDeclaration); }
+  get isInstance(): boolean { return !typescript.isStatic(this.declaration) && this.declaration.kind !== typescript.SyntaxKind.FunctionDeclaration; }
   /** Tests if this function is the constructor of a class. */
   get isConstructor(): boolean { return this.declaration.kind === typescript.SyntaxKind.Constructor; }
+  /** Tests if this function is a getter. */
+  get isGetter(): boolean { return this.declaration.kind === typescript.SyntaxKind.GetAccessor; }
+  /** Tests if this function is a setter. */
+  get isSetter(): boolean { return this.declaration.kind === typescript.SyntaxKind.SetAccessor; }
 
   toString(): string { return this.name; }
 }
@@ -49,6 +53,8 @@ export interface FunctionParameter {
 /** A function instance with generic parameters resolved. */
 export class Function extends FunctionBase {
 
+  /** Corresponding function template. */
+  template: FunctionTemplate;
   /** Resolved type arguments. */
   typeArguments: { [key: string]: TypeArgument };
   /** Function parameters including `this`. */
@@ -89,14 +95,15 @@ export class Function extends FunctionBase {
   binaryenFunction: binaryen.Function;
 
   /** Constructs a new reflected function instance and binds it to its TypeScript declaration. */
-  constructor(name: string, declaration: typescript.FunctionLikeDeclaration, typeArguments: { [key: string]: TypeArgument }, parameters: FunctionParameter[], returnType: Type, parent?: Class, body?: typescript.Block | typescript.Expression) {
-    super(name, declaration);
+  constructor(name: string, template: FunctionTemplate, typeArguments: { [key: string]: TypeArgument }, parameters: FunctionParameter[], returnType: Type, parent?: Class, body?: typescript.Block | typescript.Expression) {
+    super(name, template.declaration);
+    this.template = template;
     this.typeArguments = typeArguments;
     this.parameters = parameters;
     this.returnType = returnType;
     this.parent = parent;
     this.body = body;
-    typescript.setReflectedFunction(declaration, this);
+    typescript.setReflectedFunction(template.declaration, this);
   }
 
   /** Gets the current break label for use with binaryen loops and blocks. */
@@ -193,12 +200,11 @@ export class FunctionTemplate extends FunctionBase {
     const parameters: FunctionParameter[] = new Array(this.declaration.parameters.length);
     for (let i = 0, k = this.declaration.parameters.length; i < k; ++i) {
       const parameter = this.declaration.parameters[i];
-      const parameterTypeName = typescript.getTextOfNode(<typescript.TypeNode>parameter.type);
       parameters[i] = {
         node: parameter,
         name: typescript.getTextOfNode(parameter.name),
         type: parameter.type
-          ? typeArguments[parameterTypeName] && typeArguments[parameterTypeName].type || compiler.resolveType(parameter.type)
+          ? compiler.resolveType(parameter.type, false, typeArguments)
           : voidType
       };
       if (!parameter.type && typescript.getSourceFileOfNode(this.declaration) !== compiler.libraryFile) // library may use 'any'
@@ -213,17 +219,20 @@ export class FunctionTemplate extends FunctionBase {
     }
 
     let returnType: Type;
-    if (this.isConstructor)
-      returnType = compiler.uintptrType;
+    if (parent && this.isConstructor)
+      returnType = parent.type;
     else if (this.declaration.type) {
-      const returnTypeName = typescript.getTextOfNode(this.declaration.type);
-      returnType = typeArguments[returnTypeName] && typeArguments[returnTypeName].type || compiler.resolveType(this.declaration.type, true);
+      const returnTypeNode = this.declaration.type;
+      if (returnTypeNode.kind === typescript.SyntaxKind.ThisType && parent)
+        returnType = parent.type;
+      else
+        returnType = compiler.resolveType(returnTypeNode, true, typeArguments);
     } else {
       returnType = voidType;
-      if (typescript.getSourceFileOfNode(this.declaration) !== compiler.libraryFile) // library may use 'any'
+      if (typescript.getSourceFileOfNode(this.declaration) !== compiler.libraryFile && this.declaration.kind !== typescript.SyntaxKind.SetAccessor) // library may use 'any'
         compiler.warn(<typescript.Identifier>this.declaration.name, "Assuming return type 'void'");
     }
 
-    return this.instances[name] = new Function(name, this.declaration, typeArguments, parameters, returnType, parent, this.declaration.body);
+    return this.instances[name] = new Function(name, this, typeArguments, parameters, returnType, parent, this.declaration.body);
   }
 }

@@ -4,6 +4,7 @@ import * as binaryen from "../binaryen";
 import Compiler from "../compiler";
 import * as typescript from "../typescript";
 
+/** Compiles a block statement. */
 export function compileBlock(compiler: Compiler, node: typescript.Block): binaryen.Statement {
   const op = compiler.module;
 
@@ -20,3 +21,5 @@ export function compileBlock(compiler: Compiler, node: typescript.Block): binary
   statements.length = i;
   return op.block("", statements);
 }
+
+export { compileBlock as default };

@@ -6,6 +6,7 @@ import compileLiteral from "./literal";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles a unary prefix expression. */
 export function compilePrefixUnary(compiler: Compiler, node: typescript.PrefixUnaryExpression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
@@ -116,3 +117,5 @@ export function compilePrefixUnary(compiler: Compiler, node: typescript.PrefixUn
   compiler.error(node, "Unsupported unary prefix operator");
   return op.unreachable();
 }
+
+export { compilePrefixUnary as default };

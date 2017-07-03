@@ -5,6 +5,7 @@ import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles a conditional (ternary) expression. */
 export function compileConditional(compiler: Compiler, node: typescript.ConditionalExpression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
@@ -21,3 +22,5 @@ export function compileConditional(compiler: Compiler, node: typescript.Conditio
   typescript.setReflectedType(node, contextualType);
   return op.select(condition, ifTrue, ifFalse);
 }
+
+export { compileConditional as default };
