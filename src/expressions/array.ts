@@ -56,6 +56,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
   const elementType = (Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type))[0];
 
   for (let i = 0; i < node.elements.length; i++) {
+      const offset: number = compiler.uintptrSize;
       const element = node.elements[i];
       switch (elementType) {
           case(type.sbyteType):
@@ -68,7 +69,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
           case(type.intType):
             initializers.push(
               op.i32.store(
-                0,
+                offset,
                 elementTypeSize,
                 getMemoryIndexOfElementArray(compiler, elementTypeSize, i, arrayName),
                 expressions.compile(compiler, element, elementType)
@@ -78,7 +79,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
           case(type.doubleType):
             initializers.push(
               op.f64.store(
-                0,
+                offset,
                 elementTypeSize,
                 getMemoryIndexOfElementArray(compiler, elementTypeSize, i, arrayName),
                 expressions.compile(compiler, element, elementType)
@@ -88,7 +89,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
           case(type.floatType):
             initializers.push(
               op.f32.store(
-                0,
+                offset,
                 elementTypeSize,
                 getMemoryIndexOfElementArray(compiler, elementTypeSize, i, arrayName),
                 expressions.compile(compiler, element, elementType)
@@ -99,7 +100,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
           case(type.longType):
             initializers.push(
               op.i64.store(
-                0,
+                offset,
                 elementTypeSize,
                 getMemoryIndexOfElementArray(compiler, elementTypeSize, i, arrayName),
                 expressions.compile(compiler, element, elementType)
@@ -116,8 +117,8 @@ export function getMemoryIndexOfElementArray(compiler: Compiler, elementTypeSize
 
      return op.i32.add(
               op.i32.mul(
-                op.i32.const(elementIndex + 1),
-                op.i32.const(elementIndex === 0? compiler.uintptrSize : elementTypeSize)
+                op.i32.const(elementIndex),
+                op.i32.const(elementTypeSize)
               ),
               compiler.currentFunction === compiler.startFunction ? op.getGlobal(nameOfArray, binaryenPtrType) : op.getLocal(compiler.currentFunction.localsByName[nameOfArray].index, binaryenPtrType)
             );
