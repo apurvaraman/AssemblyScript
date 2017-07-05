@@ -63,14 +63,16 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
   for (let i = 0; i < node.elements.length; i++) {
       const offset: number = compiler.uintptrSize;
       const element = node.elements[i];
-      switch (elementType) {
-          case(type.sbyteType):
-          case(type.byteType):
-          case(type.shortType):
-          case(type.ushortType):
-          case(type.uintType):
-          case(type.uintptrType32):
-          case(type.intType):
+
+      switch (elementType.kind) {
+          case(type.TypeKind.sbyte):
+          case(type.TypeKind.short):
+          case(type.TypeKind.ushort):
+          case(type.TypeKind.uint):
+          case(type.TypeKind.uintptr):
+          case(type.TypeKind.int):
+          case(type.TypeKind.sbyte):
+          case(type.TypeKind.sbyte):
             initializers.push(
               op.i32.store(
                 offset,
@@ -80,7 +82,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
               )
             );
             break;
-          case(type.doubleType):
+          case(type.TypeKind.double):
             initializers.push(
               op.f64.store(
                 offset,
@@ -90,7 +92,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
               )
             );
             break;
-          case(type.floatType):
+          case(type.TypeKind.float):
             initializers.push(
               op.f32.store(
                 offset,
@@ -100,9 +102,8 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
               )
             );
             break;
-          case(type.uintptrType64):
-          case(type.ulongType):
-          case(type.longType):
+          case(type.TypeKind.ulong):
+          case(type.TypeKind.long):
             initializers.push(
               op.i64.store(
                 offset,

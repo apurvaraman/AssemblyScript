@@ -421,7 +421,7 @@ declare module 'assemblyscript/reflection' {
 declare module 'assemblyscript/typescript' {
   import * as reflection from "assemblyscript/reflection";
   import * as ts from "assemblyscript/--/lib/typescript/build";
-  export import NumericLiteral = ts.NumericLiteral;
+  export import ArrayLiteralExpression = ts.ArrayLiteralExpression;
   export import ArrayTypeNode = ts.ArrayTypeNode;
   export import AsExpression = ts.AsExpression;
   export import BinaryExpression = ts.BinaryExpression;
@@ -452,12 +452,13 @@ declare module 'assemblyscript/typescript' {
   export import Identifier = ts.Identifier;
   export import IfStatement = ts.IfStatement;
   export import LiteralExpression = ts.LiteralExpression;
-  export import ArrayLiteralExpression = ts.ArrayLiteralExpression;
   export import MethodDeclaration = ts.MethodDeclaration;
   export import NewExpression = ts.NewExpression;
   export import NodeArray = ts.NodeArray;
   export import NodeFlags = ts.NodeFlags;
   export import Node = ts.Node;
+  export import NumericLiteral = ts.NumericLiteral;
+  export import OmittedExpression = ts.OmittedExpression;
   export import ParameterDeclaration = ts.ParameterDeclaration;
   export import ParenthesizedExpression = ts.ParenthesizedExpression;
   export import PostfixUnaryExpression = ts.PostfixUnaryExpression;
@@ -595,6 +596,8 @@ declare module 'assemblyscript/expressions/array' {
   import * as typescript from "assemblyscript/typescript";
   export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type): binaryen.Expression;
   export function initializeElementsOfArray(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type, arrayName: string, initializers: binaryen.Expression[]): void;
+  export function getMemoryIndexOfElementArray(compiler: Compiler, elementTypeSize: number, elementIndex: number, nameOfArray: string): binaryen.I32Expression;
+  export function compileVoidAsArrayElement(compiler: Compiler, elementType: reflection.Type): binaryen.Expression;
 }
 
 declare module 'assemblyscript/expressions/as' {
@@ -1139,6 +1142,8 @@ declare module 'assemblyscript/reflection/type' {
   export const floatType: Type;
   /** Reflected 64-bit float type. */
   export const doubleType: Type;
+  /** */
+  export const uintptrType: Type;
   /** Reflected 32-bit pointer type. Relevant only when compiling for 32-bit WebAssembly. */
   export const uintptrType32: Type;
   /** Reflected 64-bit pointer type. Relevant only when compiling for 64-bit WebAssembly. */
