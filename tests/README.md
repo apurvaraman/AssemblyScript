@@ -3,6 +3,14 @@ AssemblyScript Tests
 
 The test process consists of multiple steps, in the following order. Both the source compiler (src) and the bundled distribution (dist) are tested.
 
+**Hint:** If raw tap output isn't what you are looking for, the following command pipes it through the spec reporter instead:
+
+```
+$> npm run test:spec
+```
+
+Note, though, that diff output and additional command line arguments aren't working properly respectively supported when using a reporter.
+
 Fixtures
 --------
 

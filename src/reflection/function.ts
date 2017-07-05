@@ -1,10 +1,10 @@
 /** @module assemblyscript/reflection */ /** */
 
 import * as binaryen from "../binaryen";
-import { Class, TypeArgument } from "./class";
+import { Class, TypeArgumentsMap } from "./class";
 import Compiler from "../compiler";
 import { Type, voidType } from "./type";
-import { Variable, VariableFlags } from "./variable";
+import { Variable, VariableFlags, VariablesMap } from "./variable";
 import * as typescript from "../typescript";
 
 /** Common base class of {@link Function} and {@link FunctionTemplate}. */
@@ -27,7 +27,7 @@ export abstract class FunctionBase {
   /** Tests if this function is exported to the embedder. */
   get isExport(): boolean { return typescript.isExport(this.declaration); }
   /** Tests if this function is an instance member / not static. */
-  get isInstance(): boolean { return !typescript.isStatic(this.declaration) && this.declaration.kind !== typescript.SyntaxKind.FunctionDeclaration; }
+  get isInstance(): boolean { return !typescript.isStatic(this.declaration) && this.declaration.kind === typescript.SyntaxKind.MethodDeclaration; }
   /** Tests if this function is the constructor of a class. */
   get isConstructor(): boolean { return this.declaration.kind === typescript.SyntaxKind.Constructor; }
   /** Tests if this function is a getter. */
@@ -48,6 +48,8 @@ export interface FunctionParameter {
   node: typescript.Node;
   /** Whether this parameter also introduces a property (like when used with the `public` keyword). */
   isAlsoProperty?: boolean;
+  /** Optional value initializer. */
+  initializer?: typescript.Expression;
 }
 
 /** A function instance with generic parameters resolved. */
@@ -56,7 +58,7 @@ export class Function extends FunctionBase {
   /** Corresponding function template. */
   template: FunctionTemplate;
   /** Resolved type arguments. */
-  typeArguments: { [key: string]: TypeArgument };
+  typeArguments: TypeArgumentsMap;
   /** Function parameters including `this`. */
   parameters: FunctionParameter[];
   /** Resolved return type. */
@@ -71,7 +73,7 @@ export class Function extends FunctionBase {
   /** Local variables. */
   locals: Variable[];
   /** Local variables by name for lookups. */
-  localsByName: { [key: string]: Variable };
+  localsByName: VariablesMap;
   /** Resolved binaryen parameter types. */
   binaryenParameterTypes: binaryen.Type[];
   /** Resolved binaryen return type. */
@@ -95,7 +97,7 @@ export class Function extends FunctionBase {
   binaryenFunction: binaryen.Function;
 
   /** Constructs a new reflected function instance and binds it to its TypeScript declaration. */
-  constructor(name: string, template: FunctionTemplate, typeArguments: { [key: string]: TypeArgument }, parameters: FunctionParameter[], returnType: Type, parent?: Class, body?: typescript.Block | typescript.Expression) {
+  constructor(name: string, template: FunctionTemplate, typeArguments: TypeArgumentsMap, parameters: FunctionParameter[], returnType: Type, parent?: Class, body?: typescript.Block | typescript.Expression) {
     super(name, template.declaration);
     this.template = template;
     this.typeArguments = typeArguments;
@@ -140,6 +142,58 @@ export class Function extends FunctionBase {
     this.localsByName[variable.name] = variable;
     return variable;
   }
+
+  /** Compiles a call to this function using the specified arguments. Arguments to instance functions include `this` as the first argument. */
+  makeCall(compiler: Compiler, diagnosticsNode: typescript.Node, argumentNodes: typescript.Expression[]): binaryen.Expression {
+    const op = compiler.module;
+
+    if (argumentNodes.length > this.parameters.length)
+      compiler.error(argumentNodes[argumentNodes.length - 1], "Too many arguments", "Expected max. " + this.parameters.length + " but saw " + argumentNodes.length);
+
+    const operands: binaryen.Expression[] = [];
+    for (let i = 0; i < this.parameters.length; ++i) {
+      let expr: binaryen.Expression;
+      if (i < argumentNodes.length) { // specified
+        expr = compiler.maybeConvertValue(
+          argumentNodes[i],
+          compiler.compileExpression(argumentNodes[i], this.parameters[i].type),
+          typescript.getReflectedType(argumentNodes[i]),
+          this.parameters[i].type,
+          false
+        );
+      } else { // omitted
+        const initializer = this.parameters[i].initializer;
+        if (initializer) {
+          // FIXME: initializers are currently compiled in the context of the calling function,
+          // preventing proper usage of 'this', for example.
+          expr = compiler.maybeConvertValue(
+            initializer,
+            compiler.compileExpression(initializer, this.parameters[i].type),
+            typescript.getReflectedType(initializer),
+            this.parameters[i].type,
+            false
+          );
+        } else {
+          compiler.error(diagnosticsNode, "Too few arguments", "Expected min. " + (i + 1) + " but saw " + argumentNodes.length);
+          expr = op.unreachable();
+        }
+      }
+      operands.push(expr);
+    }
+
+    // Rewire internal library calls
+    let internalName = this.name;
+    switch (internalName) {
+      case "assembly.d.ts/malloc":
+      case "assembly.d.ts/free":
+      case "assembly.d.ts/memcpy":
+      case "assembly.d.ts/memset":
+      case "assembly.d.ts/memcmp":
+        internalName = this.simpleName;
+        break;
+    }
+    return op.call(internalName, operands, binaryen.typeOf(this.returnType, compiler.uintptrSize));
+  }
 }
 
 export { Function as default };
@@ -150,7 +204,7 @@ export class FunctionTemplate extends FunctionBase {
   /** Declaration reference. */
   declaration: typescript.FunctionLikeDeclaration;
   /** So far resolved instances by global name. */
-  instances: { [key: string]: Function };
+  instances: FunctionsMap;
 
   /** Constructs a new reflected function template and binds it to its TypeScript declaration. */
   constructor(name: string, declaration: typescript.FunctionLikeDeclaration) {
@@ -164,18 +218,22 @@ export class FunctionTemplate extends FunctionBase {
   get isGeneric(): boolean { return !!(this.declaration.typeParameters && this.declaration.typeParameters.length); }
 
   /** Resolves this possibly generic function against the provided type arguments. */
-  resolve(compiler: Compiler, typeArgumentNodes: typescript.TypeNode[], parent?: Class): Function {
+  resolve(compiler: Compiler, typeArgumentNodes: typescript.TypeNode[], typeArgumentsMap?: TypeArgumentsMap): Function {
+    const parent = this.declaration.parent ? typescript.getReflectedClass(<typescript.ClassDeclaration>this.declaration.parent) : undefined;
+
     const typeParametersCount = this.declaration.typeParameters && this.declaration.typeParameters.length || 0;
     if (typeArgumentNodes.length !== typeParametersCount)
       throw Error("type parameter count mismatch");
 
     let name = this.name;
 
-    const typeArguments: { [key: string]: TypeArgument } = {};
+    // Inherit contextual type arguments, if applicablee
+    if (!typeArgumentsMap)
+      typeArgumentsMap = {};
 
-    // Inherit class type arguments
-    if (parent)
-      Object.keys(parent.typeArguments).forEach(key => typeArguments[key] = parent.typeArguments[key]);
+    // Inherit class type arguments, if an instance method
+    if (parent && this.isInstance)
+      Object.keys(parent.typeArguments).forEach(key => (<TypeArgumentsMap>typeArgumentsMap)[key] = parent.typeArguments[key]);
 
     // Handle function type arguments
     if (typeParametersCount) {
@@ -183,8 +241,8 @@ export class FunctionTemplate extends FunctionBase {
       for (let i = 0; i < typeParametersCount; ++i) {
         const parameterDeclaration = (<typescript.NodeArray<typescript.TypeParameterDeclaration>>this.declaration.typeParameters)[i];
         const typeName = typescript.getTextOfNode(<typescript.Identifier>parameterDeclaration.name);
-        const type = compiler.resolveType(typeArgumentNodes[i]);
-        typeArguments[typeName] = {
+        const type = compiler.resolveType(typeArgumentNodes[i], false, typeArgumentsMap);
+        typeArgumentsMap[typeName] = {
           type: type,
           node: <typescript.TypeNode><any>parameterDeclaration
         };
@@ -200,12 +258,15 @@ export class FunctionTemplate extends FunctionBase {
     const parameters: FunctionParameter[] = new Array(this.declaration.parameters.length);
     for (let i = 0, k = this.declaration.parameters.length; i < k; ++i) {
       const parameter = this.declaration.parameters[i];
+      if (parameter.questionToken && !typescript.isDeclare(this.declaration) && !parameter.initializer)
+        compiler.error(parameter.questionToken, "Initializer expected");
       parameters[i] = {
         node: parameter,
         name: typescript.getTextOfNode(parameter.name),
         type: parameter.type
-          ? compiler.resolveType(parameter.type, false, typeArguments)
-          : voidType
+          ? compiler.resolveType(parameter.type, false, typeArgumentsMap)
+          : voidType,
+        initializer: parameter.initializer
       };
       if (!parameter.type && typescript.getSourceFileOfNode(this.declaration) !== compiler.libraryFile) // library may use 'any'
         compiler.error(parameter, "Type expected");
@@ -226,13 +287,18 @@ export class FunctionTemplate extends FunctionBase {
       if (returnTypeNode.kind === typescript.SyntaxKind.ThisType && parent)
         returnType = parent.type;
       else
-        returnType = compiler.resolveType(returnTypeNode, true, typeArguments);
+        returnType = compiler.resolveType(returnTypeNode, true, typeArgumentsMap);
     } else {
       returnType = voidType;
       if (typescript.getSourceFileOfNode(this.declaration) !== compiler.libraryFile && this.declaration.kind !== typescript.SyntaxKind.SetAccessor) // library may use 'any'
         compiler.warn(<typescript.Identifier>this.declaration.name, "Assuming return type 'void'");
     }
 
-    return this.instances[name] = new Function(name, this, typeArguments, parameters, returnType, parent, this.declaration.body);
+    return this.instances[name] = new Function(name, this, typeArgumentsMap, parameters, returnType, parent, this.declaration.body);
   }
+}
+
+/** A reflected functions map. */
+export interface FunctionsMap {
+  [key: string]: Function;
 }

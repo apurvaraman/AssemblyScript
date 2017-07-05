@@ -1,7 +1,7 @@
 {
   "name": "assemblyscript",
   "description": "A subset of TypeScript that compiles to WebAssembly.",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "author": "Daniel Wirtz <dcode+assemblyscript@dcode.io>",
   "license": "Apache-2.0",
   "repository": {
@@ -33,7 +33,9 @@
     "lint": "tslint --config tslint.json src/**/*.ts cli/**/*.ts assembly.d.ts",
     "test": "ts-node tests",
     "test:spec": "ts-node tests | tap-spec",
-    "docs": "typedoc --tsconfig src/tsconfig.json --mode modules --name \"AssemblyScript API Documentation\" --out docs/api/ --readme none --ignoreCompilerErrors --excludeNotExported --excludePrivate"
+    "docs:api": "typedoc --tsconfig src/tsconfig.json --mode modules --name \"AssemblyScript API Documentation\" --out docs/api/ --readme none --ignoreCompilerErrors --excludeNotExported --excludePrivate",
+    "docs:std": "typedoc --tsconfig tsconfig.assembly.json --mode file --name \"AssemblyScript Standard Library Documentation\" --out docs/std/ --readme none --ignoreCompilerErrors --excludeExternals --excludePrivate --includeDeclarations",
+    "docs": "npm run docs:api && npm run docs:std"
   },
   "dependencies": {
     "binaryen": "1.37.14",
@@ -65,7 +67,7 @@
     "ts-node": "^3.1.0",
     "tslint": "^5.4.3",
     "typedoc": "^0.7.1",
-    "typedoc-plugin-external-module-name": "^1.0.9",
+    "typedoc-plugin-external-module-name": "github:dcodeIO/typedoc-plugin-external-module-name",
     "typescript": "^2.4.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-fs": "^2.4.4",
@@ -83,6 +85,7 @@
     "assembly.d.ts",
     "bin/asc",
     "bin/asc.js",
+    "bin/asc.json",
     "dist/assemblyscript.d.ts",
     "dist/assemblyscript.js",
     "dist/assemblyscript.js.map",
@@ -91,7 +94,8 @@
     "package.json",
     "package-lock.json",
     "README.md",
-    "tsconfig.assembly.json"
+    "tsconfig.assembly.json",
+    "tsconfig.base.json"
   ],
   "false": {}
 }

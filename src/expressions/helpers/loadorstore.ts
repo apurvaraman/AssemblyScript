@@ -22,15 +22,17 @@ export function compileLoadOrStore(compiler: Compiler, node: typescript.Expressi
   // store expression
   const op = compiler.module;
   const binaryenType = binaryen.typeOf(type, compiler.uintptrSize);
-  const temp = compiler.currentFunction.localsByName[type.tempName] || compiler.currentFunction.addLocal(type.tempName, type);
-  // FIXME: this uses a temporary local because the 'ptr' expression might exhibit side-effects,
+
+  // TODO: this uses a temporary local because the 'ptr' expression might exhibit side-effects,
   // i.e. if it includes a postfix unary expression or similar. but: if 'ptr' is just a get_local,
-  // this is actually unnecessary, though this function does not have any information to decide that.
+  // this is actually unnecessary, though this function does not have the information to decide that.
   // note: binaryen's optimizer seems to be able to eliminate the temp. local in this case, for now.
+  const tempVar = compiler.currentFunction.localsByName[type.tempName] || compiler.currentFunction.addLocal(type.tempName, type);
+
   return op.block("", [
-    op.setLocal(temp.index, ptr),
-    compileStore(compiler, node, type, op.getLocal(temp.index, binaryenType), offset, valueToSet),
-    compileLoad(compiler, node, type, op.getLocal(temp.index, binaryenType), offset)
+    op.setLocal(tempVar.index, ptr),
+    compileStore(compiler, node, type, op.getLocal(tempVar.index, binaryenType), offset, valueToSet),
+    compileLoad(compiler, node, type, op.getLocal(tempVar.index, binaryenType), offset)
   ], binaryenType);
 }
 

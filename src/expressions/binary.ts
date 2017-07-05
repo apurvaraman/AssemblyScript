@@ -380,7 +380,14 @@ export { compileBinary as default };
 /** Compiles a binary assignment expression. */
 export function compileAssignment(compiler: Compiler, node: typescript.BinaryExpression, contextualType: reflection.Type): binaryen.Expression {
   compiler.compileExpression(node.left, contextualType); // determines left type (usually an identifier anyway)
-  return compileAssignmentWithValue(compiler, node, compiler.compileExpression(node.right, typescript.getReflectedType(node.left)), contextualType);
+  const leftType = typescript.getReflectedType(node.left);
+  const right = compiler.compileExpression(node.right, typescript.getReflectedType(node.left));
+  const rightType = typescript.getReflectedType(node.right);
+
+  if (leftType.underlyingClass && (!rightType.underlyingClass || !rightType.underlyingClass.isAssignableTo(leftType.underlyingClass)))
+    compiler.error(node.right, "Incompatible types", "Expected " + leftType.underlyingClass.simpleName + " or a compatible subclass");
+
+  return compileAssignmentWithValue(compiler, node, right, contextualType);
 }
 
 /** Compiles a binary assignment expression with a pre-computed value. */

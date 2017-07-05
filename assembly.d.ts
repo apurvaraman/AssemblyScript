@@ -1,5 +1,9 @@
-// TypeScript definition file for AssemblyScript compilation.
-// see: https://github.com/dcodeIO/AssemblyScript for details
+/**
+ * TypeScript definition file for AssemblyScript compilation.
+ * see: https://github.com/dcodeIO/AssemblyScript for details
+ *
+ * @module assembly
+ */
 
 // Core types
 
@@ -66,10 +70,25 @@ declare const Infinityf: float;
 
 /** A fixed-size array. */
 declare class Array<T> implements IDisposable {
-  readonly length: int;
-  constructor(size: int);
+  /** Maximum number of elements this array can hold without resizing. */
+  readonly capacity: int;
+  /** Number of elements this array currently holds. */
+  length: int;
+
+  /** Constructs a new array with the specified number of elements. */
+  constructor(arrayLength: int);
+
+  /** Returns the first index at which a given element can be found in the array, or `-1` if it is not present. The array is searched forward, starting at `fromIndex`. */
+  indexOf(searchElement: T, fromIndex?: int): int;
+  /** Returns the last index at which a given element can be found in the array, or `-1` if it is not present. The array is searched backwards, starting at `fromIndex`. */
+  lastIndexOf(searchElement: T, fromIndex?: int): int;
+  /** Creates a shallow copy of a portion of the array as a new array object selected from `begin` to `end` (`end` not included). The original array will not be modified. */
+  slice(begin?: int, end?: int): this;
+  /** Reverses the array's elements in place. The first array element becomes the last, and the last array element becomes the first. */
+  reverse(): this;
+
+  // implemented
   dispose(): void;
-  indexOf(value: T, startOffset: uintptr): uintptr;
 }
 
 /** A fixed-size 8-bit signed integer array. */
@@ -96,10 +115,15 @@ declare class Float64Array extends Array<double> {}
 // Strings
 
 /** A fixed-size UTF-16LE encoded string. */
-declare class String extends Array<ushort> implements IDisposable {
+declare class String extends Array<ushort> {
+  /** Constructs a new string with the specified number of characters. */
   constructor(size: int);
+
+  /** Returns the index within the string of the first occurrence of the specified value or `-1` if the value is not found. */
   indexOfString(value: string): int;
+  /** Determines whether the string begins with the specified value. */
   startsWith(value: string): bool;
+  /** Determines whether the string ends with the specified value. */
   endsWidth(value: string): bool;
 }
 
@@ -173,6 +197,8 @@ declare function reinterpretd(value: long): double;
 declare function current_memory(): int;
 /** Grows linear memory by a given unsigned delta of pages. One page is 64kb. Returns the previous memory size in units of pages or `-1` on failure. */
 declare function grow_memory(value: uint): int;
+/** Emits an unreachable operation that results in a runtime error when executed. */
+declare function unreachable(): void;
 
 /** Determines the byte size of the specified core or class type. Compiles to a constant. */
 declare function sizeof<T>(): uintptr;
@@ -204,17 +230,21 @@ declare function malloc_init(offset: uintptr): void;
 
 // Temporary fillers
 
-declare interface Boolean {}
-declare interface Function {}
-declare interface IArguments {}
-declare interface Number {}
-declare interface Object {}
-declare interface RegExp {}
-declare interface Symbol {}
+/** @private */ declare interface Boolean {}
+/** @private */ declare interface Function {}
+/** @private */ declare interface IArguments {}
+/** @private */ declare interface Number {}
+/** @private */ declare interface Object {}
+/** @private */ declare interface RegExp {}
+/** @private */ declare interface Symbol {}
 
 // Interfaces
 
 /** Marks a class as being disposable (can be free'd from memory manually). */
 declare interface IDisposable {
+  /** Releases this instance's memory by calling `free`. The instance or a reference to it must not be used anymore afterwards. */
   dispose(): void;
 }
+
+// Internal decorators
+declare function no_implicit_malloc();

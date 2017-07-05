@@ -15,7 +15,7 @@ export const available: boolean = !!wabt;
 export const ENOTAVAILABLE: string = "wabt.js could not be found. While it is an optional dependency, using WABT-specific functionality requires it.";
 
 /** Options for {@link wasmToWast}. */
-export interface IWasmToWastOptions {
+export interface WasmToWastOptions {
   readDebugNames?: boolean;
   foldExprs?: boolean;
   inlineExport?: boolean;
@@ -23,7 +23,7 @@ export interface IWasmToWastOptions {
 }
 
 /** Converts a WebAssembly binary to text format using stack syntax. */
-export function wasmToWast(buffer: Uint8Array, options?: IWasmToWastOptions): string {
+export function wasmToWast(buffer: Uint8Array, options?: WasmToWastOptions): string {
   if (!available)
     throw Error(ENOTAVAILABLE);
 
@@ -39,7 +39,7 @@ export function wasmToWast(buffer: Uint8Array, options?: IWasmToWastOptions): st
 }
 
 /** Options for {@link wastToWasm}. */
-export interface IWastToWasmOptions {
+export interface WastToWasmOptions {
   filename?: string;
   canonicalizeLebs?: boolean;
   relocatable?: boolean;
@@ -47,7 +47,7 @@ export interface IWastToWasmOptions {
 }
 
 /** Converts WebAssembly text format using stack syntax to a binary. */
-export function wastToWasm(text: string, options?: IWastToWasmOptions): Uint8Array {
+export function wastToWasm(text: string, options?: WastToWasmOptions): Uint8Array {
   if (!available)
     throw Error(ENOTAVAILABLE);
 

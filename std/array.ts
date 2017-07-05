@@ -1,28 +1,71 @@
-export abstract class Array<T> implements IDisposable {
-  readonly length: int;
+@no_implicit_malloc()
+export class Array<T> implements IDisposable {
+  readonly capacity: int;
+  length: int; // can be any user-provided value
+
+  constructor(capacity: int) {
+
+    // if the argument is any other number, a RangeError exception is thrown
+    if (capacity < 0)
+      unreachable();
+
+    const elementsByteSize: uintptr = (capacity as uintptr) * sizeof<T>();
+    const ptr: uintptr = malloc(4 + elementsByteSize);
+    const struct: ArrayStruct = unsafe_cast<uintptr,ArrayStruct>(ptr);
+
+    struct.capacity = capacity;
+    struct.length = capacity;
+
+    memset(ptr + 4, 0, elementsByteSize);
+
+    return unsafe_cast<uintptr,this>(ptr);
+  }
 
   indexOf(searchElement: T, fromIndex: int = 0): int {
-    const length: int = this.length;
-    if (fromIndex < 0) { // if negative, it is taken as the offset from the end of the array
+    let length: int = this.length;
+
+    if (length < 0)
+      return -1;
+    if (length > this.capacity)
+      length = this.capacity;
+
+    // if negative, it is taken as the offset from the end of the array
+    if (fromIndex < 0) {
       fromIndex = length + fromIndex;
-      if (fromIndex < 0) // if the calculated index is less than 0, then the whole array will be searched
+
+      // if the calculated index is less than 0, then the whole array will be searched
+      if (fromIndex < 0)
         fromIndex = 0;
     }
-    while (fromIndex < length) { // if greater than or equal to the array's length, -1 is returned
+
+    // implicit: if greater than or equal to the array's length, -1 is returned
+    while (fromIndex < length) {
       if (this[fromIndex] == searchElement)
         return fromIndex;
       ++fromIndex;
     }
+
     return -1;
   }
 
-  lastIndexOf(searchElement: T, fromIndex: int = -1): int {
-    const length: int = this.length;
-    if (fromIndex < 0) // if negative, it is taken as the offset from the end of the array
+  lastIndexOf(searchElement: T, fromIndex: int = 0x7fffffff): int {
+    let length: int = this.length;
+
+    if (length < 0)
+      return -1;
+    if (length > this.capacity)
+      length = this.capacity;
+
+     // if negative, it is taken as the offset from the end of the array
+    if (fromIndex < 0)
       fromIndex = length + fromIndex;
-    else if (fromIndex >= length) // if greater than or equal to the length of the array, the whole array will be searched
+
+    // if greater than or equal to the length of the array, the whole array will be searched
+    else if (fromIndex >= length)
       fromIndex = length - 1;
-    while (fromIndex >= 0) { // if the calculated index is less than 0, -1 is returned
+
+    // implicit: if the calculated index is less than 0, -1 is returned
+    while (fromIndex >= 0) {
       if (this[fromIndex] == searchElement)
         return fromIndex;
       --fromIndex;
@@ -30,35 +73,60 @@ export abstract class Array<T> implements IDisposable {
     return -1;
   }
 
-/*
-  slice(begin: int = 0, end: int = this.length): Array<T> {
-    const length: int = this.length;
+  slice(begin: int = 0, end: int = 0x7fffffff): this {
+    let length: int = this.length;
+
+    if (length < 0)
+      return unsafe_cast<Array<T>,this>(new Array<T>(0));
+    if (length > this.capacity)
+      length = this.capacity;
+
     if (begin < 0) {
       begin = length + begin;
       if (begin < 0)
         begin = 0;
     } else if (begin > length)
       begin = length;
+
     if (end < 0)
       end = length + end;
+    else if (end > length)
+      end = length;
+
     if (end < begin)
       end = begin;
-    // TODO: Creating the slice requires malloc
+
+    const arrayLength: int = end - begin;
+    const elementsByteSize: uintptr = (arrayLength as uintptr) * sizeof<T>();
+    const ptr: uintptr = malloc(4 + elementsByteSize);
+
+    unsafe_cast<uintptr,ArrayStruct>(ptr).length = arrayLength;
+    memcpy(ptr + 4, unsafe_cast<this,uintptr>(this) + 4 + begin * sizeof<T>(), elementsByteSize);
+
+    return unsafe_cast<uintptr,this>(ptr);
   }
-*/
 
   reverse(): this {
+    const length: int = this.length;
+
     // transposes the elements of the calling array object in place, mutating the array
-    let t: T, i: int = 0, j: int = this.length - 1;
-    while (i < j) {
+    for (let i: int = 0, j: int = length - 1, t: int; i < j; ++i, --j) {
       t = this[i];
       this[i] = this[j];
       this[j] = t;
-      ++i;
-      --j;
     }
-    return this; // and returning a reference to the array
+
+    // and returning a reference to the array
+    return this;
   }
 
-  abstract dispose(): void;
+  dispose(): void {
+    free(unsafe_cast<this,uintptr>(this));
+  }
+}
+
+// transient helper struct used to set the otherwise readonly length property
+class ArrayStruct {
+  capacity: int;
+  length: int;
 }

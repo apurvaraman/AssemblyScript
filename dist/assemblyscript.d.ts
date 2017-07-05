@@ -141,6 +141,8 @@ declare module 'assemblyscript/builtins' {
   export function current_memory(compiler: Compiler): binaryen.Expression;
   /** Compiles a grow memory operation. */
   export function grow_memory(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression;
+  /** Compiles an unreachable operation. */
+  export function unreachable(compiler: Compiler): binaryen.Expression;
   /** Compiles a sizeof operation determining the byte size of a type. */
   export function sizeof(compiler: Compiler, type: reflection.Type): binaryen.Expression;
   /** Compiles an unsafe cast operation casting a value from one type to another. */
@@ -313,6 +315,8 @@ declare module 'assemblyscript/compiler' {
           moduleName: string;
           name: string;
       };
+      /** Compiles a malloc invocation using the specified byte size. */
+      compileMallocInvocation(size: number, clearMemory?: boolean): binaryen.Expression;
       /** Compiles a function. */
       compileFunction(instance: reflection.Function): binaryen.Function | null;
       /** Compiles a class. */
@@ -507,7 +511,7 @@ declare module 'assemblyscript/typescript' {
   export function printDiagnostic(diagnostic: Diagnostic): void;
   /** Tests if the specified node has an 'export' modifier. */
   export function isExport(node: Node): boolean;
-  /** Tests if the specified node has a 'declare' modifier. */
+  /** Tests if the specified node has a 'declare' modifier or is part of a class with a 'declare' modifier. */
   export function isDeclare(node: Node): boolean;
   /** Tests if the specified node has a 'static' modifier or is otherwise part of a static context. */
   export function isStatic(node: Node): boolean;
@@ -569,23 +573,23 @@ declare module 'assemblyscript/wabt' {
   /** A reusable error message in case wabt.js is not available. */
   export const ENOTAVAILABLE: string;
   /** Options for {@link wasmToWast}. */
-  export interface IWasmToWastOptions {
+  export interface WasmToWastOptions {
     readDebugNames?: boolean;
     foldExprs?: boolean;
     inlineExport?: boolean;
     generateNames?: boolean;
   }
   /** Converts a WebAssembly binary to text format using stack syntax. */
-  export function wasmToWast(buffer: Uint8Array, options?: IWasmToWastOptions): string;
+  export function wasmToWast(buffer: Uint8Array, options?: WasmToWastOptions): string;
   /** Options for {@link wastToWasm}. */
-  export interface IWastToWasmOptions {
+  export interface WastToWasmOptions {
     filename?: string;
     canonicalizeLebs?: boolean;
     relocatable?: boolean;
     writeDebugNames?: boolean;
   }
   /** Converts WebAssembly text format using stack syntax to a binary. */
-  export function wastToWasm(text: string, options?: IWastToWasmOptions): Uint8Array;
+  export function wastToWasm(text: string, options?: WastToWasmOptions): Uint8Array;
 }
 
 declare module 'assemblyscript/expressions/array' {
@@ -633,7 +637,7 @@ declare module 'assemblyscript/expressions/binary' {
 declare module 'assemblyscript/expressions/call' {
   /** @module assemblyscript/expressions */ /** */
   import * as binaryen from "assemblyscript/binaryen";
-  import { Compiler } from "assemblyscript/compiler";
+  import Compiler from "assemblyscript/compiler";
   import * as reflection from "assemblyscript/reflection";
   import * as typescript from "assemblyscript/typescript";
   /** Compiles a function call expression. */
@@ -727,10 +731,6 @@ declare module 'assemblyscript/expressions/new' {
   /** Compiles a 'new' expression. */
   export function compileNew(compiler: Compiler, node: typescript.NewExpression, contextualType: reflection.Type): binaryen.Expression;
   export { compileNew as default };
-  /** Compiles a 'new' class expression. */
-  export function compileNewClass(compiler: Compiler, node: typescript.NewExpression, clazz: reflection.Class): binaryen.Expression;
-  /** Compiles a 'new' array expression. */
-  export function compileNewArray(compiler: Compiler, elementType: reflection.Type, sizeArgumentNode: typescript.Expression): binaryen.Statement;
 }
 
 declare module 'assemblyscript/expressions/parenthesized' {
@@ -788,9 +788,12 @@ declare module 'assemblyscript/reflection/class' {
   export abstract class ClassBase {
       /** Global name. */
       name: string;
+      /** Simple name. */
+      simpleName: string;
       /** Declaration reference. */
       declaration: typescript.ClassDeclaration;
       protected constructor(name: string, declaration: typescript.ClassDeclaration);
+      hasDecorator(name: string): boolean;
       toString(): string;
   }
   /** Interface describing a reflected type argument. */
@@ -799,6 +802,10 @@ declare module 'assemblyscript/reflection/class' {
       type: Type;
       /** TypeScript type node. */
       node: typescript.TypeNode;
+  }
+  /** Interface describing a reflected type arguments map. */
+  export interface TypeArgumentsMap {
+      [key: string]: TypeArgument;
   }
   /** Interface describing a reflected class method. */
   export interface ClassMethod {
@@ -839,11 +846,18 @@ declare module 'assemblyscript/reflection/class' {
       size: number;
       /** Whether array access is supported on this class. */
       isArray: boolean;
+      /** Whether this is a string-like class. */
       isString: boolean;
+      /** Whether memory must be allocated implicitly. */
+      implicitMalloc: boolean;
       /** Constructs a new reflected class and binds it to its TypeScript declaration. */
       constructor(name: string, template: ClassTemplate, uintptrType: Type, typeArguments: {
           [key: string]: TypeArgument;
       }, base?: Class);
+      /** Tests if this class extends another class. */
+      extends(base: Class): boolean;
+      /** Tests if this class is assignable to the specified (class) type. */
+      isAssignableTo(type: Class): boolean;
       /** Initializes the class, its properties, methods and constructor. */
       initialize(compiler: Compiler): void;
       /** Initializes a single method. */
@@ -902,10 +916,10 @@ declare module 'assemblyscript/reflection/enum' {
 declare module 'assemblyscript/reflection/function' {
   /** @module assemblyscript/reflection */ /** */
   import * as binaryen from "assemblyscript/binaryen";
-  import { Class, TypeArgument } from "assemblyscript/reflection/class";
+  import { Class, TypeArgumentsMap } from "assemblyscript/reflection/class";
   import Compiler from "assemblyscript/compiler";
   import { Type } from "assemblyscript/reflection/type";
-  import { Variable } from "assemblyscript/reflection/variable";
+  import { Variable, VariablesMap } from "assemblyscript/reflection/variable";
   import * as typescript from "assemblyscript/typescript";
   /** Common base class of {@link Function} and {@link FunctionTemplate}. */
   export abstract class FunctionBase {
@@ -940,15 +954,15 @@ declare module 'assemblyscript/reflection/function' {
       node: typescript.Node;
       /** Whether this parameter also introduces a property (like when used with the `public` keyword). */
       isAlsoProperty?: boolean;
+      /** Optional value initializer. */
+      initializer?: typescript.Expression;
   }
   /** A function instance with generic parameters resolved. */
   export class Function extends FunctionBase {
       /** Corresponding function template. */
       template: FunctionTemplate;
       /** Resolved type arguments. */
-      typeArguments: {
-          [key: string]: TypeArgument;
-      };
+      typeArguments: TypeArgumentsMap;
       /** Function parameters including `this`. */
       parameters: FunctionParameter[];
       /** Resolved return type. */
@@ -960,9 +974,7 @@ declare module 'assemblyscript/reflection/function' {
       /** Local variables. */
       locals: Variable[];
       /** Local variables by name for lookups. */
-      localsByName: {
-          [key: string]: Variable;
-      };
+      localsByName: VariablesMap;
       /** Resolved binaryen parameter types. */
       binaryenParameterTypes: binaryen.Type[];
       /** Resolved binaryen return type. */
@@ -982,15 +994,15 @@ declare module 'assemblyscript/reflection/function' {
       /** Binaryen function reference. */
       binaryenFunction: binaryen.Function;
       /** Constructs a new reflected function instance and binds it to its TypeScript declaration. */
-      constructor(name: string, template: FunctionTemplate, typeArguments: {
-          [key: string]: TypeArgument;
-      }, parameters: FunctionParameter[], returnType: Type, parent?: Class, body?: typescript.Block | typescript.Expression);
+      constructor(name: string, template: FunctionTemplate, typeArguments: TypeArgumentsMap, parameters: FunctionParameter[], returnType: Type, parent?: Class, body?: typescript.Block | typescript.Expression);
       /** Gets the current break label for use with binaryen loops and blocks. */
       readonly breakLabel: string;
       /** Initializes this function. Does not compile it, yet. */
       initialize(compiler: Compiler): void;
       /** Introduces an additional local variable. */
       addLocal(name: string, type: Type): Variable;
+      /** Compiles a call to this function using the specified arguments. Arguments to instance functions include `this` as the first argument. */
+      makeCall(compiler: Compiler, diagnosticsNode: typescript.Node, argumentNodes: typescript.Expression[]): binaryen.Expression;
   }
   export { Function as default };
   /** A function template with possibly unresolved generic parameters. */
@@ -998,15 +1010,17 @@ declare module 'assemblyscript/reflection/function' {
       /** Declaration reference. */
       declaration: typescript.FunctionLikeDeclaration;
       /** So far resolved instances by global name. */
-      instances: {
-          [key: string]: Function;
-      };
+      instances: FunctionsMap;
       /** Constructs a new reflected function template and binds it to its TypeScript declaration. */
       constructor(name: string, declaration: typescript.FunctionLikeDeclaration);
       /** Tests if this function requires type arguments. */
       readonly isGeneric: boolean;
       /** Resolves this possibly generic function against the provided type arguments. */
-      resolve(compiler: Compiler, typeArgumentNodes: typescript.TypeNode[], parent?: Class): Function;
+      resolve(compiler: Compiler, typeArgumentNodes: typescript.TypeNode[], typeArgumentsMap?: TypeArgumentsMap): Function;
+  }
+  /** A reflected functions map. */
+  export interface FunctionsMap {
+      [key: string]: Function;
   }
 }
 
@@ -1187,6 +1201,10 @@ declare module 'assemblyscript/reflection/variable' {
       toString(): string;
   }
   export { Variable as default };
+  /** A reflected variables map. */
+  export interface VariablesMap {
+      [key: string]: Variable;
+  }
 }
 
 declare module 'assemblyscript/statements/block' {

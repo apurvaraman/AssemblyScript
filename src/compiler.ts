@@ -355,7 +355,7 @@ export class Compiler {
       const binaryenArgumentTypes: binaryen.Type[] = argumentTypes.map(type => binaryen.typeOf(type, this.uintptrSize));
       const binaryenReturnType = binaryen.typeOf(returnType, this.uintptrSize);
       signature = this.signatures[identifier] = this.module.getFunctionTypeBySignature(binaryenReturnType, binaryenArgumentTypes)
-        || this.module.addFunctionType(identifier, binaryenReturnType, binaryenArgumentTypes);
+                                             || this.module.addFunctionType(identifier, binaryenReturnType, binaryenArgumentTypes);
     }
     return signature;
   }
@@ -549,11 +549,12 @@ export class Compiler {
   /** Initializes a function or class method. */
   initializeFunction(node: typescript.FunctionLikeDeclaration): { template: reflection.FunctionTemplate, instance?: reflection.Function } {
     let name: string;
-    let parent: reflection.Class | undefined;
     if (node.kind === typescript.SyntaxKind.FunctionDeclaration) {
       name = this.mangleGlobalName(typescript.getTextOfNode(<typescript.Identifier>node.name), typescript.getSourceFileOfNode(node));
     } else {
-      parent = typescript.getReflectedClass(<typescript.ClassDeclaration>node.parent);
+      const parent = typescript.getReflectedClass(<typescript.ClassDeclaration>node.parent);
+      if (!parent)
+        throw Error("missing parent");
       if (node.kind === typescript.SyntaxKind.Constructor)
         name = parent.name;
       else if (typescript.isStatic(node))
@@ -570,7 +571,7 @@ export class Compiler {
         if (builtins.isBuiltin(name)) // generic builtins evaluate type parameters dynamically and have a known return type
           typescript.setReflectedFunction(node, new reflection.Function(name, template, {}, [], this.resolveType(<typescript.TypeNode>template.declaration.type, true)));
       } else {
-        instance = this.functions[name] = template.resolve(this, [], parent);
+        instance = this.functions[name] = template.resolve(this, []);
         instance.initialize(this);
       }
     }
@@ -775,6 +776,24 @@ export class Compiler {
     };
   }
 
+  /** Compiles a malloc invocation using the specified byte size. */
+  compileMallocInvocation(size: number, clearMemory: boolean = true): binaryen.Expression {
+    const op = this.module;
+    const binaryenPtrType = binaryen.typeOf(this.uintptrType, this.uintptrSize);
+
+    // Simplify if possible but always obtain a pointer for consistency
+    if (size === 0 || !clearMemory)
+      return op.call("malloc", [ binaryen.valueOf(this.uintptrType, op, size) ], binaryenPtrType);
+
+    return op.call("memset", [
+      op.call("malloc", [ // use wrapped malloc here so mspace_malloc can be inlined
+        binaryen.valueOf(this.uintptrType, op, size)
+      ], binaryenPtrType),
+      op.i32.const(0), // 2nd memset argument is int
+      binaryen.valueOf(this.uintptrType, op, size)
+    ], binaryenPtrType);
+  }
+
   /** Compiles a function. */
   compileFunction(instance: reflection.Function): binaryen.Function | null {
     const op = this.module;
@@ -824,8 +843,24 @@ export class Compiler {
       ));
     }
 
-    if (instance.isConstructor) // Constructors return 'this' internally
-      body.push(op.return(op.getLocal(0, binaryen.typeOf(this.uintptrType, this.uintptrSize))));
+    // Constructors implicitly allocate memory and return 'this' by default
+    // Can be disabled with the 'no_implicit_malloc' decorator for explicit memory allocation.
+    if (instance.isConstructor && (<reflection.Class>instance.parent).implicitMalloc) {
+      let thisVar = instance.localsByName.this;
+      if (!thisVar)
+        thisVar = instance.addLocal("this", instance.returnType);
+      body.unshift(
+        op.setLocal(
+          thisVar.index,
+          this.compileMallocInvocation((<reflection.Class>instance.parent).size)
+        )
+      );
+      body.push(
+        op.return(
+          op.getLocal(thisVar.index, binaryen.typeOf(thisVar.type, this.uintptrSize))
+        )
+      );
+    }
 
     const additionalLocals = instance.locals.slice(initialLocalsIndex).map(local => binaryen.typeOf(local.type, this.uintptrSize));
     const binaryenFunction = instance.binaryenFunction = this.module.addFunction(instance.name, instance.binaryenSignature, additionalLocals, op.block("", body));

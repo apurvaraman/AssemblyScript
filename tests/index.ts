@@ -135,7 +135,6 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
         module = <binaryen.Module>Compiler.compileFile(file, options);
       } catch (e) {
         test.fail(name + ".ts should compile without throwing");
-        test.end();
         return;
       }
 
@@ -144,19 +143,22 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
         process.stderr.write(messages.replace(/^/mg, "> ") + "\n");
 
       test.ok(module, name + ".ts should not fail to compile");
-      if (!module) {
-        test.end();
-        return;
-      }
+      if (!module) return;
 
       const buffer = module.emitBinary();
-      util.load(buffer).then(module => {
-        test.test(kind + " - interop - " + name, test => runner(test, module));
-      }).catch(err => {
-        test.fail("loading " + name + ".wasm should not be rejected (" + err.message + ")");
-        test.end();
+
+      // async subtest
+      test.test(kind + " - interop - " + name, test => {
+        util.load(buffer)
+        .then(module => runner(test, module))
+        .catch(err => {
+          test.fail("loading " + name + ".wasm should not be rejected (" + err.message + ")");
+          test.end();
+        });
       });
     });
+
+    test.end();
   });
 
   // 3) other tests
