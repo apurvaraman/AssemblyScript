@@ -1,40 +1,39 @@
+//! { "memoryModel": "exportmalloc" }
+
 export function stringArray43(a: int) : string {
     let list : string[] = ["hey", "hello", "how are you"];
     return list[a];
 }
 
+let a: int[] = [-1, 2, 3]; 
+let c: float[] = [0.5, , 6.0, 7.2, -8.54];
+let d: double[] = [4.3, 4, -8, 0.000009];
+let e: long[] = [];
 
-// //! { "memoryModel": "exportmalloc" }
+export function initIntArr(){
+    a[0] = 1;
+}
 
-// let a: int[] = [-1, 2, 3]; 
-// let c: float[] = [0.5, , 6.0, 7.2, -8.54];
-// let d: double[] = [4.3, 4, -8, 0.000009];
-// let e: long[] = [];
+export function getIntArrayElem(val: uint): int{
+    return a[val];
+}
 
-// export function initIntArr(){
-//     a[0] = 1;
-// }
+export function initFloatArr(){
+    c[0] = 12.5;
+}
 
-// export function getIntArrayElem(val: uint): int{
-//     return a[val];
-// }
+export function getFloatArrElem(val: uint): float{
+    return c[val];
+}
 
-// export function initFloatArr(){
-//     c[0] = 12.5;
-// }
+export function initDoubleArr(){
+    d[0] = 1212.5;
+}
 
-// export function getFloatArrElem(val: uint): float{
-//     return c[val];
-// }
+export function getDoubleArrElem(val: uint): double{
+    return d[val];
+}
 
-// export function initDoubleArr(){
-//     d[0] = 1212.5;
-// }
-
-// export function getDoubleArrElem(val: uint): double{
-//     return d[val];
-// }
-
-// export function getLongArrElem(val: uint): long{
-//     return e[val]; //Should give an error
-// }
+export function getLongArrElem(val: uint): long{
+    return e[val]; //Should give an error
+}
