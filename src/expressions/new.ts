@@ -4,7 +4,6 @@ import * as binaryen from "../binaryen";
 import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
-import * as array from "./array";
 
 /** Compiles a 'new' expression. */
 export function compileNew(compiler: Compiler, node: typescript.NewExpression, contextualType: reflection.Type): binaryen.Expression {

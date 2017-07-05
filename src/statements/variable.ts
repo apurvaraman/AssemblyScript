@@ -4,7 +4,7 @@ import * as binaryen from "../binaryen";
 import { Compiler } from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
-import * as array from "../expressions/array";
+import * as array from "../expressions/arrayliteral";
 
 /** Compiles a variable declaration statement. */
 export function compileVariable(compiler: Compiler, node: typescript.VariableStatement): binaryen.Statement {

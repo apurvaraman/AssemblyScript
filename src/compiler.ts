@@ -10,7 +10,7 @@ import Profiler from "./profiler";
 import * as reflection from "./reflection";
 import * as statements from "./statements";
 import * as typescript from "./typescript";
-import * as array from "./expressions/array";
+import * as array from "./expressions/arrayliteral";
 
 // Malloc, free, etc. is present as a base64 encoded blob and prepared once when required.
 let mallocWasm: Uint8Array;

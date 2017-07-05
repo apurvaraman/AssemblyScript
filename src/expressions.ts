@@ -4,7 +4,7 @@
  * @preferred
  */ /** */
 
-export * from "./expressions/array";
+export * from "./expressions/arrayliteral";
 export * from "./expressions/as";
 export * from "./expressions/binary";
 export * from "./expressions/call";
@@ -16,6 +16,7 @@ export * from "./expressions/helpers/store";
 export * from "./expressions/identifier";
 export * from "./expressions/literal";
 export * from "./expressions/new";
+export * from "./expressions/omitted";
 export * from "./expressions/parenthesized";
 export * from "./expressions/postfixunary";
 export * from "./expressions/prefixunary";
