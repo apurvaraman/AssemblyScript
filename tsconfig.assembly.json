@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noLib": true,
     "noImplicitAny": false,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "types": []
   },
   "files":[
     "./assembly.d.ts"

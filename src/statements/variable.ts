@@ -5,10 +5,14 @@ import { Compiler } from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles a variable declaration statement. */
 export function compileVariable(compiler: Compiler, node: typescript.VariableStatement): binaryen.Statement {
   return compileVariableDeclarationList(compiler, node.declarationList);
 }
 
+export { compileVariable as default };
+
+/** Compiles a variable declaration list statement. */
 export function compileVariableDeclarationList(compiler: Compiler, node: typescript.VariableDeclarationList): binaryen.Statement {
   const op = compiler.module;
 

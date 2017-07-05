@@ -20,6 +20,7 @@ block {
 } $break
 */
 
+/** Compiles a switch statement. */
 export function compileSwitch(compiler: Compiler, node: typescript.SwitchStatement): binaryen.Statement {
   const op = compiler.module;
 
@@ -97,3 +98,5 @@ export function compileSwitch(compiler: Compiler, node: typescript.SwitchStateme
       return op.drop(voidCondition);
   }
 }
+
+export { compileSwitch as default };

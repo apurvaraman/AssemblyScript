@@ -4,9 +4,12 @@ import Type from "./type";
 
 /** Flags describing the kind of a variable. */
 export enum VariableFlags {
-  none     = 0,
+  /** No flags. */
+  none = 0,
+  /** Constant variable. */
   constant = 1 << 0,
-  global   = 1 << 1
+  /** Global variable. */
+  global = 1 << 1
 }
 
 /** A reflected variable. */
@@ -40,3 +43,8 @@ export class Variable {
 }
 
 export { Variable as default };
+
+/** A reflected variables map. */
+export interface VariablesMap {
+  [key: string]: Variable;
+}

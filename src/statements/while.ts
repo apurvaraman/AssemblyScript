@@ -16,6 +16,7 @@ block {
 } $break
 */
 
+/** Compiles a while loop statement. */
 export function compileWhile(compiler: Compiler, node: typescript.WhileStatement): binaryen.Statement {
   const op = compiler.module;
 
@@ -40,3 +41,5 @@ export function compileWhile(compiler: Compiler, node: typescript.WhileStatement
   compiler.leaveBreakContext();
   return op.block("break$" + label, context);
 }
+
+export { compileWhile as default };

@@ -5932,7 +5932,11 @@
   )
   (drop
    (call $Body#offsetMomentum
-    (get_local $0)
+    (i32.load offset=4
+     (i32.load
+      (get_local $0)
+     )
+    )
     (get_local $3)
     (get_local $4)
     (get_local $5)
@@ -6135,38 +6139,23 @@
         )
         (f64.store offset=24
          (get_local $2)
-         (f64.add
-          (f64.load offset=24
-           (get_local $2)
-          )
-          (f64.mul
-           (get_local $10)
-           (get_local $4)
-          )
+         (f64.mul
+          (get_local $10)
+          (get_local $4)
          )
         )
         (f64.store offset=32
          (get_local $2)
-         (f64.add
-          (f64.load offset=32
-           (get_local $2)
-          )
-          (f64.mul
-           (get_local $11)
-           (get_local $4)
-          )
+         (f64.mul
+          (get_local $11)
+          (get_local $4)
          )
         )
         (f64.store offset=40
          (get_local $2)
-         (f64.add
-          (f64.load offset=40
-           (get_local $2)
-          )
-          (f64.mul
-           (get_local $12)
-           (get_local $4)
-          )
+         (f64.mul
+          (get_local $12)
+          (get_local $4)
          )
         )
         (set_local $8
@@ -6193,38 +6182,23 @@
      )
      (f64.store
       (get_local $0)
-      (f64.add
-       (f64.load
-        (get_local $0)
-       )
-       (f64.mul
-        (get_local $1)
-        (get_local $5)
-       )
+      (f64.mul
+       (get_local $1)
+       (get_local $5)
       )
      )
      (f64.store offset=8
       (get_local $0)
-      (f64.add
-       (f64.load offset=8
-        (get_local $0)
-       )
-       (f64.mul
-        (get_local $1)
-        (get_local $6)
-       )
+      (f64.mul
+       (get_local $1)
+       (get_local $6)
       )
      )
      (f64.store offset=16
       (get_local $0)
-      (f64.add
-       (f64.load offset=16
-        (get_local $0)
-       )
-       (f64.mul
-        (get_local $1)
-        (get_local $7)
-       )
+      (f64.mul
+       (get_local $1)
+       (get_local $7)
       )
      )
      (set_local $3

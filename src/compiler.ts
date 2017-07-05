@@ -354,7 +354,7 @@ export class Compiler {
       const binaryenArgumentTypes: binaryen.Type[] = argumentTypes.map(type => binaryen.typeOf(type, this.uintptrSize));
       const binaryenReturnType = binaryen.typeOf(returnType, this.uintptrSize);
       signature = this.signatures[identifier] = this.module.getFunctionTypeBySignature(binaryenReturnType, binaryenArgumentTypes)
-        || this.module.addFunctionType(identifier, binaryenReturnType, binaryenArgumentTypes);
+                                             || this.module.addFunctionType(identifier, binaryenReturnType, binaryenArgumentTypes);
     }
     return signature;
   }
@@ -459,8 +459,7 @@ export class Compiler {
         op.addGlobal(name, binaryen.typeOf(type, this.uintptrSize), mutable, binaryen.valueOf(type, op, 0));
 
         if (!this.startFunction)
-          (this.startFunction = new reflection.Function(".start", <typescript.FunctionLikeDeclaration>{}, {}, [], reflection.voidType))
-            .initialize(this);
+          (this.startFunction = createStartFunction()).initialize(this);
 
         const previousFunction = this.currentFunction;
         this.currentFunction = this.startFunction;
@@ -536,11 +535,12 @@ export class Compiler {
   /** Initializes a function or class method. */
   initializeFunction(node: typescript.FunctionLikeDeclaration): { template: reflection.FunctionTemplate, instance?: reflection.Function } {
     let name: string;
-    let parent: reflection.Class | undefined;
     if (node.kind === typescript.SyntaxKind.FunctionDeclaration) {
       name = this.mangleGlobalName(typescript.getTextOfNode(<typescript.Identifier>node.name), typescript.getSourceFileOfNode(node));
     } else {
-      parent = typescript.getReflectedClass(<typescript.ClassDeclaration>node.parent);
+      const parent = typescript.getReflectedClass(<typescript.ClassDeclaration>node.parent);
+      if (!parent)
+        throw Error("missing parent");
       if (node.kind === typescript.SyntaxKind.Constructor)
         name = parent.name;
       else if (typescript.isStatic(node))
@@ -555,9 +555,9 @@ export class Compiler {
       template = this.functionTemplates[name] = new reflection.FunctionTemplate(name, node);
       if (template.isGeneric) {
         if (builtins.isBuiltin(name)) // generic builtins evaluate type parameters dynamically and have a known return type
-          typescript.setReflectedFunction(node, new reflection.Function(name, node, {}, [], this.resolveType(<typescript.TypeNode>template.declaration.type, true)));
+          typescript.setReflectedFunction(node, new reflection.Function(name, template, {}, [], this.resolveType(<typescript.TypeNode>template.declaration.type, true)));
       } else {
-        instance = this.functions[name] = template.resolve(this, [], parent);
+        instance = this.functions[name] = template.resolve(this, []);
         instance.initialize(this);
       }
     }
@@ -709,8 +709,7 @@ export class Compiler {
 
     // create a blank start function if there isn't one yet
     if (!this.startFunction)
-      (this.startFunction = new reflection.Function(".start", <typescript.FunctionLikeDeclaration>{}, {}, [], reflection.voidType))
-        .initialize(this);
+      (this.startFunction = createStartFunction()).initialize(this);
     const previousFunction = this.currentFunction;
     this.currentFunction = this.startFunction;
 
@@ -763,6 +762,24 @@ export class Compiler {
     };
   }
 
+  /** Compiles a malloc invocation using the specified byte size. */
+  compileMallocInvocation(size: number, clearMemory: boolean = true): binaryen.Expression {
+    const op = this.module;
+    const binaryenPtrType = binaryen.typeOf(this.uintptrType, this.uintptrSize);
+
+    // Simplify if possible but always obtain a pointer for consistency
+    if (size === 0 || !clearMemory)
+      return op.call("malloc", [ binaryen.valueOf(this.uintptrType, op, size) ], binaryenPtrType);
+
+    return op.call("memset", [
+      op.call("malloc", [ // use wrapped malloc here so mspace_malloc can be inlined
+        binaryen.valueOf(this.uintptrType, op, size)
+      ], binaryenPtrType),
+      op.i32.const(0), // 2nd memset argument is int
+      binaryen.valueOf(this.uintptrType, op, size)
+    ], binaryenPtrType);
+  }
+
   /** Compiles a function. */
   compileFunction(instance: reflection.Function): binaryen.Function | null {
     const op = this.module;
@@ -792,7 +809,7 @@ export class Compiler {
         const property = (<reflection.Class>instance.parent).properties[param.name];
         if (property)
           body.push(
-            compileStore(this, /* solely used for diagnostics anyway */ <typescript.Expression>param.node, property.type, op.getLocal(0, binaryen.typeOf(this.uintptrType, this.uintptrSize)), op.getLocal(i + 1, binaryen.typeOf(param.type, this.uintptrSize)), property.offset)
+            compileStore(this, /* solely used for diagnostics anyway */ <typescript.Expression>param.node, property.type, op.getLocal(0, binaryen.typeOf(this.uintptrType, this.uintptrSize)), property.offset, op.getLocal(i + 1, binaryen.typeOf(param.type, this.uintptrSize)))
           );
         else
           this.error(param.node, "Property initializer parameter without a property");
@@ -812,8 +829,24 @@ export class Compiler {
       ));
     }
 
-    if (instance.isConstructor) // Constructors return 'this' internally
-      body.push(op.return(op.getLocal(0, binaryen.typeOf(this.uintptrType, this.uintptrSize))));
+    // Constructors implicitly allocate memory and return 'this' by default
+    // Can be disabled with the 'no_implicit_malloc' decorator for explicit memory allocation.
+    if (instance.isConstructor && (<reflection.Class>instance.parent).implicitMalloc) {
+      let thisVar = instance.localsByName.this;
+      if (!thisVar)
+        thisVar = instance.addLocal("this", instance.returnType);
+      body.unshift(
+        op.setLocal(
+          thisVar.index,
+          this.compileMallocInvocation((<reflection.Class>instance.parent).size)
+        )
+      );
+      body.push(
+        op.return(
+          op.getLocal(thisVar.index, binaryen.typeOf(thisVar.type, this.uintptrSize))
+        )
+      );
+    }
 
     const additionalLocals = instance.locals.slice(initialLocalsIndex).map(local => binaryen.typeOf(local.type, this.uintptrSize));
     const binaryenFunction = instance.binaryenFunction = this.module.addFunction(instance.name, instance.binaryenSignature, additionalLocals, op.block("", body));
@@ -1115,7 +1148,7 @@ export class Compiler {
   }
 
   /** Resolves a TypeScript type to a AssemblyScript type. */
-  resolveType(type: typescript.TypeNode, acceptVoid: boolean = false): reflection.Type {
+  resolveType(type: typescript.TypeNode, acceptVoid: boolean = false, typeArgumentsMap?: { [key: string]: reflection.TypeArgument }): reflection.Type {
 
     switch (type.kind) {
 
@@ -1132,8 +1165,18 @@ export class Compiler {
         this.warn(type, "Assuming 'double'");
         return reflection.doubleType;
 
+      case typescript.SyntaxKind.ThisKeyword:
+      case typescript.SyntaxKind.ThisType:
+        if (this.currentFunction && this.currentFunction.parent)
+          return this.currentFunction.parent.type;
+        // fallthrough
+
       case typescript.SyntaxKind.TypeReference:
       {
+        const typeName = typescript.getTextOfNode(type);
+        if (typeArgumentsMap && typeArgumentsMap[typeName])
+          return typeArgumentsMap[typeName].type;
+
         const referenceNode = <typescript.TypeReferenceNode>type;
         const symbolAtLocation = this.checker.getSymbolAtLocation(referenceNode.typeName);
         if (symbolAtLocation) {
@@ -1164,7 +1207,7 @@ export class Compiler {
 
             if (reference instanceof reflection.ClassTemplate && referenceNode.typeArguments) {
               const template = <reflection.ClassTemplate>reference;
-              const instance = template.resolve(this, referenceNode.typeArguments);
+              const instance = template.resolve(this, referenceNode.typeArguments, typeArgumentsMap);
               if (!this.classes[instance.name]) {
                 this.classes[instance.name] = instance;
                 instance.initialize(this);
@@ -1192,7 +1235,7 @@ export class Compiler {
       }
     }
 
-    this.error(type, "Unsupported type");
+    this.error(type, "Unsupported type", typescript.getTextOfNode(type));
     return reflection.voidType;
   }
 
@@ -1230,3 +1273,8 @@ export class Compiler {
 }
 
 export { Compiler as default };
+
+/** Creates a new reflected start function. */
+function createStartFunction(): reflection.Function {
+  return new reflection.Function(".start", new reflection.FunctionTemplate(".start", <typescript.FunctionLikeDeclaration>{}), {}, [], reflection.voidType);
+}

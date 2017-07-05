@@ -1,7 +1,7 @@
 {
   "name": "assemblyscript",
   "description": "A subset of TypeScript that compiles to WebAssembly.",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "author": "Daniel Wirtz <dcode+assemblyscript@dcode.io>",
   "license": "Apache-2.0",
   "repository": {
@@ -27,12 +27,15 @@
     "build:typescript": "tsc -P lib/typescript && echo export = ts; >> lib/typescript/build/index.d.ts",
     "build:alldeps": "node scripts/build-check && npm run build:malloc && npm run build:typescript",
     "build:library": "node scripts/build-library",
+    "build:bundle-loader": "node scripts/build-bundle-loader",
     "build:bundle": "tsc -P src && node scripts/build-bundle",
-    "build": "npm run lint && npm run build:library && npm run build:bundle",
+    "build": "npm run lint && npm run build:library && npm run build:bundle && npm run build:bundle-loader",
     "lint": "tslint --config tslint.json src/**/*.ts cli/**/*.ts assembly.d.ts",
     "test": "ts-node tests",
     "test:spec": "ts-node tests | tap-spec",
-    "docs": "typedoc --tsconfig src/tsconfig.json --mode modules --name \"AssemblyScript API Documentation\" --out docs/api/ --readme none --ignoreCompilerErrors --excludeNotExported --excludePrivate"
+    "docs:api": "typedoc --tsconfig src/tsconfig.json --mode modules --name \"AssemblyScript API Documentation\" --out docs/api/ --readme none --ignoreCompilerErrors --excludeNotExported --excludePrivate",
+    "docs:std": "typedoc --tsconfig tsconfig.assembly.json --mode file --name \"AssemblyScript Standard Library Documentation\" --out docs/std/ --readme none --ignoreCompilerErrors --excludeExternals --excludePrivate --includeDeclarations",
+    "docs": "npm run docs:api && npm run docs:std"
   },
   "dependencies": {
     "binaryen": "1.37.14",
@@ -82,6 +85,7 @@
     "assembly.d.ts",
     "bin/asc",
     "bin/asc.js",
+    "bin/asc.json",
     "dist/assemblyscript.d.ts",
     "dist/assemblyscript.js",
     "dist/assemblyscript.js.map",
@@ -90,7 +94,8 @@
     "package.json",
     "package-lock.json",
     "README.md",
-    "tsconfig.assembly.json"
+    "tsconfig.assembly.json",
+    "tsconfig.base.json"
   ],
   "false": {}
 }

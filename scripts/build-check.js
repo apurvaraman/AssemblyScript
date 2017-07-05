@@ -14,7 +14,7 @@ function error(message) {
 
 var pkg = require("../package.json");
 Object.keys(pkg.devDependencies).forEach(key => {
-  try { require(key); } catch (e) {
+  try { require(key + "/package.json"); } catch (e) {
   console.error(
   error("Missing development dependency: ") + key + `
 

@@ -11,12 +11,32 @@ export abstract class ClassBase {
 
   /** Global name. */
   name: string;
+  /** Simple name. */
+  simpleName: string;
   /** Declaration reference. */
   declaration: typescript.ClassDeclaration;
 
   protected constructor(name: string, declaration: typescript.ClassDeclaration) {
     this.name = name;
     this.declaration = declaration;
+    const p = name.lastIndexOf("/");
+    this.simpleName = p > -1 ? name.substring(p + 1) : name;
+  }
+
+  hasDecorator(name: string): boolean {
+    const decorators = this.declaration.decorators;
+    if (!decorators)
+      return false;
+    for (let i = 0, k = decorators.length; i < k; ++i) {
+      const decorator = decorators[i];
+      if (
+        decorator.expression.kind === typescript.SyntaxKind.CallExpression &&
+        (<typescript.CallExpression>decorator.expression).expression.kind === typescript.SyntaxKind.Identifier &&
+        (<typescript.Identifier>(<typescript.CallExpression>decorator.expression).expression).text === name
+      )
+        return true;
+    }
+    return false;
   }
 
   toString(): string { return this.name; }
@@ -30,14 +50,34 @@ export interface TypeArgument {
   node: typescript.TypeNode;
 }
 
+/** Interface describing a reflected type arguments map. */
+export interface TypeArgumentsMap {
+  [key: string]: TypeArgument;
+}
+
+/** Interface describing a reflected class method. */
 export interface ClassMethod {
+  /** Class template with possibly unresolved type parameters. */
   template: FunctionTemplate;
+  /** Class instance with type parameters resolved, if initialized yet. */
   instance?: Function;
+}
+
+/** Tests if the specified global name references a built-in array. */
+export function isBuiltinArray(globalName: string) {
+  return /^assembly\.d\.ts\/Array<|^std\/array\.ts\/Array</.test(globalName);
+}
+
+/** Tests if the specified global name references a built-in string. */
+export function isBuiltinString(globalName: string) {
+  return globalName === "assembly.d.ts/String";
 }
 
 /** A class instance with generic parameters resolved. */
 export class Class extends ClassBase {
 
+  /** Corresponding class template. */
+  template: ClassTemplate;
   /** Reflected class type. */
   type: Type;
   /** Concrete type arguments. */
@@ -56,21 +96,43 @@ export class Class extends ClassBase {
   size: number = 0;
   /** Whether array access is supported on this class. */
   isArray: boolean = false;
-  // TODO
+  /** Whether this is a string-like class. */
   isString: boolean = false;
+  /** Whether memory must be allocated implicitly. */
+  implicitMalloc: boolean = false;
 
   /** Constructs a new reflected class and binds it to its TypeScript declaration. */
-  constructor(name: string, declaration: typescript.ClassDeclaration, uintptrType: Type, typeArguments: { [key: string]: TypeArgument } , base?: Class) {
-    super(name, declaration);
+  constructor(name: string, template: ClassTemplate, uintptrType: Type, typeArguments: { [key: string]: TypeArgument } , base?: Class) {
+    super(name, template.declaration);
+    this.template = template;
     this.type = uintptrType.withUnderlyingClass(this);
     this.typeArguments = typeArguments;
     this.base = base;
-    typescript.setReflectedClass(declaration, this);
 
-    if (/^assembly\.d\.ts\/Array<|^std\/array\.ts\/ArrayImpl</.test(this.name) || (!!this.base && this.base.isArray))
+    typescript.setReflectedClass(template.declaration, this);
+
+    if (isBuiltinArray(this.name) || (!!this.base && this.base.isArray))
       this.isArray = true;
-    if (this.name === "assembly.d.ts/String" || (!!this.base && this.base.isString))
+    if (isBuiltinString(this.name) || (!!this.base && this.base.isString))
       this.isString = true;
+
+    this.implicitMalloc = !this.hasDecorator("no_implicit_malloc");
+  }
+
+  /** Tests if this class extends another class. */
+  extends(base: Class): boolean {
+    let current = this.base;
+    while (current) {
+      if (current === base)
+        return true;
+      current = current.base;
+    }
+    return false;
+  }
+
+  /** Tests if this class is assignable to the specified (class) type. */
+  isAssignableTo(type: Class): boolean {
+    return this === type || this.extends(type);
   }
 
   /** Initializes the class, its properties, methods and constructor. */
@@ -141,11 +203,13 @@ export class Class extends ClassBase {
         }
 
         case typescript.SyntaxKind.MethodDeclaration:
+        case typescript.SyntaxKind.GetAccessor:
+        case typescript.SyntaxKind.SetAccessor:
           this.initializeMethod(compiler, <typescript.MethodDeclaration>member);
           break;
 
         default:
-          compiler.error(member, "Unsupported class member");
+          compiler.error(member, "Unsupported class member", "SyntaxKind " + member.kind);
       }
     }
   }
@@ -172,6 +236,8 @@ export class ClassTemplate extends ClassBase {
   base?: ClassTemplate;
   /** Base type arguments. */
   baseTypeArguments: typescript.TypeNode[];
+  /** Type arguments string postfix. */
+  typeArgumentsString: string;
 
   /** Constructs a new reflected class template and binds it to is TypeScript declaration. */
   constructor(name: string, declaration: typescript.ClassDeclaration, base?: ClassTemplate, baseTypeArguments?: typescript.TypeNode[]) {
@@ -187,7 +253,7 @@ export class ClassTemplate extends ClassBase {
   get isGeneric(): boolean { return !!(this.declaration.typeParameters && this.declaration.typeParameters.length); }
 
   /** Resolves this possibly generic class against the provided type arguments. */
-  resolve(compiler: Compiler, typeArgumentNodes: typescript.TypeNode[]): Class {
+  resolve(compiler: Compiler, typeArgumentNodes: typescript.TypeNode[], typeArgumentsMap?: { [key: string]: TypeArgument }): Class {
     const typeParametersCount = this.declaration.typeParameters && this.declaration.typeParameters.length || 0;
     if (typeArgumentNodes.length !== typeParametersCount)
       throw Error("type parameter count mismatch: expected "+ typeParametersCount + " but saw " + typeArgumentNodes.length);
@@ -198,7 +264,7 @@ export class ClassTemplate extends ClassBase {
       const typeNames: string[] = new Array(typeParametersCount);
       for (let i = 0; i < typeParametersCount; ++i) {
         const parameter = (<typescript.NodeArray<typescript.TypeParameterDeclaration>>this.declaration.typeParameters)[i];
-        const parameterType = compiler.resolveType(typeArgumentNodes[i]);
+        const parameterType = compiler.resolveType(typeArgumentNodes[i], false, typeArgumentsMap);
         const parameterName = typescript.getTextOfNode(<typescript.Identifier>parameter.name);
         typeArguments[parameterName] = {
           type: parameterType,
@@ -206,8 +272,10 @@ export class ClassTemplate extends ClassBase {
         };
         typeNames[i] = parameterType.toString();
       }
-      name += "<" + typeNames.join(",") + ">";
-    }
+      this.typeArgumentsString = "<" + typeNames.join(",") + ">";
+      name += this.typeArgumentsString;
+    } else
+      this.typeArgumentsString = "";
 
     if (this.instances[name])
       return this.instances[name];
@@ -224,14 +292,14 @@ export class ClassTemplate extends ClassBase {
       base = this.base.resolve(compiler, baseTypeArgumentNodes);
     }
 
-    return this.instances[name] = new Class(name, this.declaration, compiler.uintptrType, typeArguments, base);
+    return this.instances[name] = new Class(name, this, compiler.uintptrType, typeArguments, base);
   }
 }
 
 /** Patches a declaration to inherit from its actual implementation. */
 export function patchClassImplementation(compiler: Compiler, declTemplate: ClassTemplate, implTemplate: ClassTemplate): void {
 
-  // Make the declaration and extend the implementation. New instances will automatically inherit this change from the template.
+  // Make the declaration extend the implementation. New instances will automatically inherit this change from the template.
   implTemplate.base = declTemplate.base; // overrides inheritance from declaration
   declTemplate.base = implTemplate;
   if (implTemplate.declaration.typeParameters) {

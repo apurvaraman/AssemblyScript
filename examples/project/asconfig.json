@@ -1,0 +1,8 @@
+{
+  "entryFile": "./module.ts",
+  "outFile": "./build/module.wasm",
+  "textFile": "./build/module.wat",
+  "target": "wasm32",
+  "memoryModel": "bare",
+  "optimize": true
+}

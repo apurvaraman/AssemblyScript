@@ -7,6 +7,33 @@ Try it out in your browser: [dcode.io/AssemblyScript](http://dcode.io/AssemblySc
 
 [![npm](https://img.shields.io/npm/v/assemblyscript.svg)](https://www.npmjs.com/package/assemblyscript) [![Build Status](https://travis-ci.org/dcodeIO/AssemblyScript.svg?branch=master)](https://travis-ci.org/dcodeIO/AssemblyScript) [![npm](https://img.shields.io/npm/dm/assemblyscript.svg)](https://www.npmjs.com/package/assemblyscript)
 
+Contents
+--------
+
+* [How it works](#how-it-works)<br />
+  A few insights to get an initial idea.
+
+* [What to expect](#what-to-expect)<br />
+  General remarks on design decisions and trade-offs.
+
+* [Example](#example)<br />
+  Basic examples to get you started.
+
+* [Usage](#usage)<br />
+  An introduction to the environment and its provided functionality.
+
+* [Command line](#command-line)<br />
+  How to use the command line utility.
+
+* [API](#api)<br />
+  How to use the API programmatically.
+
+* [Additional documentation](#additional-documentation)<br />
+  A list of available documentation resources.
+
+* [Building](#building)<br />
+  How to build the compiler and its components yourself.
+
 How it works
 ------------
 
@@ -14,7 +41,25 @@ Under the hood, AssemblyScript rewires TypeScript's [compiler API](https://githu
 
 Every AssemblyScript program is valid TypeScript syntactically, but not necessarily semantically. The definitions required to start developing in AssemblyScript are provided by [assembly.d.ts](./assembly.d.ts). See also: [Usage](#usage)
 
-The compiler is able to produce WebAssembly binaries (.wasm) as well as their corresponding text format (.wast). Both Binaryen's s-expression format and, with a little help of [WABT](https://github.com/WebAssembly/wabt), official stack-based text format are supported. See also: [Command line](#command-line)
+The compiler is able to produce WebAssembly binaries (.wasm) as well as their corresponding text format (.wast). Both Binaryen's s-expression format and, with a little help of [WABT](https://github.com/WebAssembly/wabt), official linear text format are supported. See also: [CLI](#command-line)
+
+What to expect
+--------------
+
+<details><p>
+The most prominent difference of JavaScript and any strictly typed language is that, in TypeScript/JavaScript, a variable can reference a value of any type. This implies that a JavaScript VM has to conduct additional book-keeping of a value's type in addition to its value and that it has to perform additional checks whenever a variable is accessed. Modern JavaScript VMs shortcut the overhead introduced by this and similar dynamic features by generating case-specific code based on statistical information collected just in time, effectively reducing the amount of checks to perform implicitly and thus speeding up execution significantly. Similarily, developers shortcut the overhead of remembering each variable's type by using TypeScript. The combination of both also makes a good match because it potentially aids the JIT compiler.
+
+Nonetheless, TypeScript isn't a *strictly* typed language after all because it allows specific constructs to resort to JavaScript's dynamic features. For example, TypeScript allows annotating function parameters as omittable (i.e. `someParameter?: number`), effectively resulting in a union type `number | undefined` at runtime, just like it also allows declaring union types explicitly. Conceptionally, these constructs are incompatible with a strict, AOT-compiled type system unless relatively expensive workarounds are introduced. Hence...
+</p><summary><strong>TL;DR</strong></summary></details>
+
+Instead of trying to mimic TypeScript/JavaScript as closely as possible at the expense of performance (recap that: slower than similar code running in a JIT-compiling VM), AssemblyScript tries to support TypeScript features as closely as reasonable, not supporting certain JavaScript-specific dynamic constructs intentionally:
+
+* All types must be annotated to avoid possibly unwanted implicit type conversions
+* Optional function parameters require an initializer expression
+* Union types, `any` and `undefined` are not supported by design
+* The result of logical `&&` / `||` expressions is always `bool`
+
+Also note that AssemblyScript is a rather new and ambitious project developed by one guy and a hand full of occasional contributors. Expect bugs and breaking changes. Prepare to fix stuff yourself and to send a PR for it, unless you like the idea enough to consider sponsoring development.
 
 Example
 -------
@@ -35,8 +80,8 @@ Compiles to:
  (export "add" (func $add))
  (func $add (type $iFi) (param $0 i32) (param $1 f64) (result i32)
   (return
-   (i32.shl
-    (i32.shr_s
+   (i32.shr_s
+    (i32.shl
      (i32.add
       (get_local $0)
       (i32.trunc_s/f64
@@ -78,12 +123,18 @@ load("path/to/module.wasm", {
 Usage
 -----
 
+```
+$> npm install assemblyscript --save-dev
+```
+
 The environment is configured by either referencing [assembly.d.ts](./assembly.d.ts) directly or by using a `tsconfig.json` that simply extends [tsconfig.assembly.json](https://github.com/dcodeIO/AssemblyScript/blob/master/tsconfig.assembly.json), like so:
 
 ```json
 {
   "extends": "./node_modules/assemblyscript/tsconfig.assembly.json",
-  ...
+  "include": [
+    "./*.ts"
+  ]
 }
 ```
 
@@ -104,7 +155,7 @@ Type      | Alias     | Native type | sizeof | Description
 `uintptr` | -         | i32 / i64   | 4 / 8  | A 32-bit unsigned integer when targeting 32-bit WebAssembly.<br />A 64-bit unsigned integer when targeting 64-bit WebAssembly.
 `float`   | `float32` | f32         | 4      | A 32-bit float.
 `double`  | `float64` | f64         | 8      | A 64-bit float.
-`bool`    | -         | i32         | 1      | A 1-bit unsigned _integer_.
+`bool`    | -         | i32         | 1      | A 1-bit unsigned integer.
 `void`    | -         | none        | -      | No return type
 
 While generating a warning to avoid type confusion, the JavaScript types `number` and `boolean` resolve to `double` and `bool` respectively.
@@ -179,6 +230,8 @@ WebAssembly-specific operations are available as built-in functions that transla
   Returns the current memory size in units of pages. One page is 64kb.
 * **grow_memory**(value: `uint`): `int`<br />
   Grows linear memory by a given unsigned delta of pages. One page is 64kb. Returns the previous memory size in units of pages or `-1` on failure.
+* **unreachable**(): `void`<br />
+  Emits an unreachable operation that results in a runtime error when executed.
 
 The following AssemblyScript-specific operations are implemented as built-ins as well:
 
@@ -257,8 +310,58 @@ function start(): void {
 }
 ```
 
+Command line
+------------
+
+The command line compiler `asc` works similar to TypeScript's `tsc`:
+
+```
+Syntax: asc [options] entryFile
+
+Options:
+
+ --config, -c       Specifies a JSON configuration file with command line options.
+                    Will look for 'asconfig.json' in the entry's directory if omitted.
+
+ --outFile, -o      Specifies the output file name. Emits text format if ending with .wast
+                    (sexpr) or .wat (linear). Prints to stdout if omitted.
+
+ --optimize, -O     Runs optimizing binaryen IR passes.
+
+ --validate, -v     Validates the module.
+
+ --quiet, -q        Runs in quiet mode, not printing anything to console.
+
+ --target, -t       Specifies the target architecture:
+
+                    wasm32  Compiles to 32-bit WebAssembly [default]
+                    wasm64  Compiles to 64-bit WebAssembly
+
+ --memoryModel, -m  Specifies the memory model to use / how to proceed with malloc etc.:
+
+                    malloc        Bundles malloc etc. [default]
+                    exportmalloc  Bundles malloc etc. and exports each
+                    importmalloc  Imports malloc etc. from 'env'
+                    bare          Excludes malloc etc. entirely
+
+ --textFormat, -f   Specifies the format to use for text output:
+
+                    sexpr   Emits s-expression syntax (.wast) [default]
+                    linear  Emits official linear syntax (.wat)
+
+                    Text format only is emitted when used without --textFile.
+
+ --textFile         Can be used to save text format alongside a binary in one command.
+
+ --help, -h         Displays this help message.
+```
+
+A configuration file (usually named `asconfig.json`) using the long option keys above plus a special key `entryFile` specifying the path to the entry file can be used to reuse options between invocations.
+
 API
 ---
+
+It's also possible to use the API programmatically:
 
 * **Compiler.compileFile**(filename: `string`, options?: `CompilerOptions`): `binaryen.Module | null`<br />
   Compiles the specified entry file to a WebAssembly module. Returns `null` on failure.
@@ -297,23 +400,22 @@ API
     * **MALLOC**<br />
       Bundles malloc, free, etc.
     * **EXPORT_MALLOC**<br />
-      Bundles malloc, free, etc. and exports it to the embedder.
+      Bundles malloc, free, etc. and exports each to the embedder.
     * **IMPORT_MALLOC**<br />
       Imports malloc, free, etc. as provided by the embedder.
-
-See the [API documentation](http://dcode.io/AssemblyScript/api) for all the details.
 
 ### Example
 
 ```ts
-import { Compiler, typescript } from "assemblyscript";
+import { Compiler, CompilerTarget, CompilerMemoryModel, typescript } from "assemblyscript";
 
 const module = Compiler.compileString(`
 export function add(a: int, b: int): int {
   return a + b;
 }
 `, {
-  uintptrSize: 4,
+  target: CompilerTarget.WASM32,
+  memoryModel: CompilerMemoryModel.MALLOC,
   silent: true
 });
 
@@ -334,38 +436,19 @@ const wasmFile = module.emitBinary();
 module.dispose();
 ```
 
-Remember to call `Module#dispose()` once you are done with a module to free its resources. This is necessary because binaryen.js has been compiled from C and hence doesn't provide automatic garbage collection.
+Remember to call `binaryen.Module#dispose()` once you are done with a module to free its resources. This is necessary because binaryen.js has been compiled from C/C++ and doesn't provide automatic garbage collection.
 
-Command line
-------------
+Additional documentation
+------------------------
 
-The command line compiler `asc` works similar to TypeScript's `tsc`:
+#### AssemblyScript
 
-```
-Syntax: asc [options] entryFile
+* [Standard Library Documentation](http://dcode.io/AssemblyScript/std)
+* [API Documentation](http://dcode.io/AssemblyScript/api)
 
-Options:
- --out, -o, --outFile   Specifies the output file name.
- --validate, -v         Validates the module.
- --optimize, -O         Runs optimizing binaryen IR passes.
- --silent               Does not print anything to console.
- --text                 Emits text format instead of a binary.
+#### WebAssembly
 
-                        sexpr   Emits s-expression syntax as produced by Binaryen. [default]
-                        stack   Emits stack syntax / official text format.
-
- --target, -t           Specifies the target architecture.
-
-                        wasm32  Compiles to 32-bit WebAssembly. [default]
-                        wasm64  Compiles to 64-bit WebAssembly.
-
- --memorymodel, -m      Specifies the memory model to use.
-
-                        malloc        Bundles malloc, free, etc. [default]
-                        exportmalloc  Bundles malloc, free, etc. and exports each to the embedder.
-                        importmalloc  Imports malloc, free, etc. as provided by the embedder within 'env'.
-                        bare          Excludes malloc, free, etc. entirely.
-```
+* [WebAssembly Design Documents](https://github.com/WebAssembly/design)
 
 Building
 --------
@@ -397,7 +480,5 @@ $> npm test
 ```
 
 ---
-
-That's it for now. Feel free to experiment. PRs welcome!
 
 License: [Apache License, Version 2.0](https://opensource.org/licenses/Apache-2.0)

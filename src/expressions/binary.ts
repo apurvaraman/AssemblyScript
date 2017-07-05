@@ -2,8 +2,8 @@
 
 import * as binaryen from "../binaryen";
 import Compiler from "../compiler";
-import compileLoad from "./helpers/load";
-import compileStore from "./helpers/store";
+import compileElementAccess from "./elementaccess";
+import compilePropertyAccess from "./propertyaccess";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
@@ -12,6 +12,9 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
 
   if (node.operatorToken.kind === typescript.SyntaxKind.EqualsToken)
     return compileAssignment(compiler, node, contextualType);
+
+  if (node.operatorToken.kind === typescript.SyntaxKind.AmpersandAmpersandToken || node.operatorToken.kind === typescript.SyntaxKind.BarBarToken)
+    return compileLogicalAndOr(compiler, node);
 
   let left: binaryen.Expression = compiler.compileExpression(node.left, contextualType);
   let leftType: reflection.Type = typescript.getReflectedType(node.left);
@@ -156,11 +159,6 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
 
       resultType = commonType;
       break;
-
-    // &&, ||
-    // TODO: decide how to handle these
-    // case typescript.SyntaxKind.AmpersandAmpersandToken:
-    // case typescript.SyntaxKind.BarBarToken:
 
     // +=, -=, **=, *=, /=, %=, &=, |=, ^=
     // prioritize left type, result is left type
@@ -377,11 +375,22 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
   return op.unreachable();
 }
 
+export { compileBinary as default };
+
+/** Compiles a binary assignment expression. */
 export function compileAssignment(compiler: Compiler, node: typescript.BinaryExpression, contextualType: reflection.Type): binaryen.Expression {
   compiler.compileExpression(node.left, contextualType); // determines left type (usually an identifier anyway)
-  return compileAssignmentWithValue(compiler, node, compiler.compileExpression(node.right, typescript.getReflectedType(node.left)), contextualType);
+  const leftType = typescript.getReflectedType(node.left);
+  const right = compiler.compileExpression(node.right, typescript.getReflectedType(node.left));
+  const rightType = typescript.getReflectedType(node.right);
+
+  if (leftType.underlyingClass && (!rightType.underlyingClass || !rightType.underlyingClass.isAssignableTo(leftType.underlyingClass)))
+    compiler.error(node.right, "Incompatible types", "Expected " + leftType.underlyingClass.simpleName + " or a compatible subclass");
+
+  return compileAssignmentWithValue(compiler, node, right, contextualType);
 }
 
+/** Compiles a binary assignment expression with a pre-computed value. */
 export function compileAssignmentWithValue(compiler: Compiler, node: typescript.BinaryExpression, value: binaryen.Expression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
@@ -412,158 +421,81 @@ export function compileAssignmentWithValue(compiler: Compiler, node: typescript.
 
     }
 
-  } else if (node.left.kind === typescript.SyntaxKind.ElementAccessExpression) {
-    const accessNode = <typescript.ElementAccessExpression>node.left;
-    const reference = compiler.resolveReference(<typescript.Identifier>accessNode.expression);
-    const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
-    const uintptrCategory = <binaryen.I32Operations | binaryen.I64Operations>binaryen.categoryOf(compiler.uintptrType, op, compiler.uintptrSize);
-    const argumentNode = <typescript.Expression>accessNode.argumentExpression;
-    const argument = compiler.maybeConvertValue(argumentNode, compiler.compileExpression(argumentNode, compiler.uintptrType), typescript.getReflectedType(argumentNode), compiler.uintptrType, false);
+  } else if (node.left.kind === typescript.SyntaxKind.ElementAccessExpression)
+    return compileElementAccess(compiler, <typescript.ElementAccessExpression>node.left, contextualType, node.right);
 
-    // this[argument] = expression
-    if (accessNode.expression.kind === typescript.SyntaxKind.ThisKeyword) {
-      const clazz = compiler.currentFunction && compiler.currentFunction.parent || null;
-      if (clazz && compiler.currentFunction.isInstance) {
-        if (clazz.type.isArray) {
-          const underlyingType = (<reflection.Class>clazz.type.underlyingClass).typeArguments.T.type;
-          const storeOp = compileStore(compiler, accessNode, underlyingType,
-            uintptrCategory.add(
-              op.getLocal(0, binaryenPtrType),
-              uintptrCategory.mul(
-                argument,
-                binaryen.valueOf(compiler.uintptrType, op, underlyingType.size)
-              )
-            ), value, compiler.uintptrSize
-          );
+  else if (node.left.kind === typescript.SyntaxKind.PropertyAccessExpression)
+    return compilePropertyAccess(compiler, <typescript.PropertyAccessExpression>node.left, contextualType, node.right);
 
-          if (contextualType === reflection.voidType)
-            return storeOp;
+  compiler.error(node.operatorToken, "Unsupported assignment operation", "SyntaxKind " + node.operatorToken.kind);
+  return op.unreachable();
+}
 
-          typescript.setReflectedType(node, underlyingType);
-          // TODO
+/** Compiles a binary logical AND or OR expression. */
+export function compileLogicalAndOr(compiler: Compiler, node: typescript.BinaryExpression): binaryen.Expression {
+  const op = compiler.module;
 
-        } else {
-          compiler.error(accessNode, "Array access used on non-array object");
-          return op.unreachable();
-        }
-      } else {
-        compiler.error(accessNode.expression, "'this' keyword used in non-instance context");
-        return op.unreachable();
-      }
+  typescript.setReflectedType(node, reflection.boolType);
 
-    // identifier[argument] = expression
-    } else if (accessNode.expression.kind === typescript.SyntaxKind.Identifier) {
+  const left = compileIsTrueish(compiler, node.left);
+  const right = compileIsTrueish(compiler, node.right);
 
-      if (reference instanceof reflection.Variable) {
-        const variable = <reflection.Variable>reference;
-        if (variable.type.isArray) {
-          const underlyingType = (<reflection.Class>variable.type.underlyingClass).typeArguments.T.type;
-          const storeOp = compileStore(compiler, accessNode, underlyingType,
-            uintptrCategory.add(
-              compiler.compileExpression(accessNode.expression, compiler.uintptrType),
-              uintptrCategory.mul(
-                argument,
-                binaryen.valueOf(compiler.uintptrType, op, underlyingType.size)
-              )
-            ), value, compiler.uintptrSize
-          );
+  // &&
+  if (node.operatorToken.kind === typescript.SyntaxKind.AmpersandAmpersandToken)
+    return op.select(
+      left,
+      /* ? */ right,
+      /* : */ binaryen.valueOf(reflection.intType, op, 0)
+    );
 
-          if (contextualType === reflection.voidType)
-            return storeOp;
+  // ||
+  else if (node.operatorToken.kind === typescript.SyntaxKind.BarBarToken)
+    return op.select(
+      left,
+      /* ? */ binaryen.valueOf(reflection.intType, op, 1),
+      /* : */ right
+    );
 
-          typescript.setReflectedType(node, variable.type);
-          // TODO
+  compiler.error(node.operatorToken, "Unsupported logical operation", "SyntaxKind " + node.operatorToken.kind);
+  return op.unreachable();
+}
 
-        } else {
-          compiler.error(accessNode, "Array access used on non-array object");
-          return op.unreachable();
-        }
-      }
-    }
+/** Compiles any expression so that it evaluates to a boolean result indicating whether it is true-ish. */
+export function compileIsTrueish(compiler: Compiler, node: typescript.Expression): binaryen.Expression {
+  const op = compiler.module;
 
-  } else if (node.left.kind === typescript.SyntaxKind.PropertyAccessExpression) {
-    const accessNode = <typescript.PropertyAccessExpression>node.left;
-    const propertyName = typescript.getTextOfNode(accessNode.name);
+  const expr = compiler.compileExpression(node, reflection.intType);
+  const type = typescript.getReflectedType(node);
 
-    // this.identifier = expression
-    if (accessNode.expression.kind === typescript.SyntaxKind.ThisKeyword) {
-      const clazz = compiler.currentFunction && compiler.currentFunction.parent || null;
-      if (clazz) {
-        const property = clazz.properties[propertyName];
-        if (property) {
-          const storeOp = compileStore(compiler, accessNode, property.type,
-            op.getLocal(0, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize)), // ^= this
-            compiler.maybeConvertValue(node.right, value, typescript.getReflectedType(node.right), property.type, false),
-            property.offset
-          );
+  typescript.setReflectedType(node, reflection.boolType);
 
-          if (contextualType === reflection.voidType)
-            return storeOp;
+  switch (type.kind) {
+    case reflection.TypeKind.byte:
+    case reflection.TypeKind.sbyte:
+    case reflection.TypeKind.short:
+    case reflection.TypeKind.ushort:
+    case reflection.TypeKind.int:
+    case reflection.TypeKind.uint:
+    case reflection.TypeKind.bool:
+      return op.i32.ne(expr, op.i32.const(0));
 
-          typescript.setReflectedType(node, property.type);
-          return op.block("", [
-            storeOp,
-            compileLoad(compiler, accessNode, property.type, op.getLocal(0, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize)), property.offset)
-          ], binaryen.typeOf(property.type, compiler.uintptrSize));
-        } else {
-          compiler.error(node, "No such instance property", "'" + propertyName + "' on " + clazz.name);
-          return op.unreachable();
-        }
-      } else {
-        compiler.error(accessNode, "'this' keyword used in non-instance context");
-        return op.unreachable();
-      }
+    case reflection.TypeKind.long:
+    case reflection.TypeKind.ulong:
+      return op.i64.ne(expr, op.i64.const(0, 0));
 
-    // identifier.identifier = expression
-    } else if (accessNode.expression.kind === typescript.SyntaxKind.Identifier) {
-      const reference = compiler.resolveReference(<typescript.Identifier>accessNode.expression);
+    case reflection.TypeKind.float:
+      return op.f32.ne(expr, op.f32.const(0));
 
-      if (reference instanceof reflection.Class) {
-        const clazz = <reflection.Class>reference;
-        const property = clazz.properties[propertyName];
-        if (property && !property.isInstance) {
-          if (property.isConstant) {
-            compiler.error(node, "Cannot assign to constant static property", "'" + propertyName + "' on " + clazz.name);
-            return op.unreachable();
-          } else {
-            // const global = compiler.globals[clazz.name + "." + propertyName];
-            // TODO: a static property is a global
-          }
-        } else {
-          compiler.error(node, "No such static property", "'" + propertyName + "' on " + clazz.name);
-          return op.unreachable();
-        }
+    case reflection.TypeKind.double:
+      return op.f64.ne(expr, op.f64.const(0));
 
-      } else if (reference instanceof reflection.Variable) {
-        const variable = <reflection.Variable>reference;
-
-        if (variable.type.isClass) {
-          const clazz = <reflection.Class>variable.type.underlyingClass;
-          const property = clazz.properties[propertyName];
-          if (property && property.isInstance) {
-            const storeOp = compileStore(compiler, accessNode, property.type,
-              op.getLocal(variable.index, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize)), // ^= this
-              compiler.maybeConvertValue(node.right, value, typescript.getReflectedType(node.right), property.type, false),
-              property.offset
-            );
-
-            if (contextualType === reflection.voidType)
-              return storeOp;
-
-            typescript.setReflectedType(node, property.type);
-            return op.block("", [
-              storeOp,
-              compileLoad(compiler, accessNode, property.type, op.getLocal(variable.index, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize)), property.offset)
-            ], binaryen.typeOf(property.type, compiler.uintptrSize));
-          } else {
-            compiler.error(node, "No such instance property", "'" + propertyName + "' on " + clazz.name);
-            return op.unreachable();
-          }
-        }
-      }
-    }
+    case reflection.TypeKind.uintptr: // TODO: special handling of strings?
+      if (compiler.uintptrSize === 4)
+        return op.i32.ne(expr, op.i32.const(0));
+      else
+        return op.i64.ne(expr, op.i64.const(0, 0));
   }
 
-  compiler.error(node.operatorToken, "Unsupported assignment");
+  compiler.error(node, "Unsupported logical operand", "SyntaxKind " + node.kind);
   return op.unreachable();
 }

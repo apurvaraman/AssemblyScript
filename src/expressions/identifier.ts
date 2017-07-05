@@ -5,6 +5,7 @@ import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 
+/** Compiles an identifier expression. */
 export function compileIdentifier(compiler: Compiler, node: typescript.Identifier, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
@@ -28,3 +29,5 @@ export function compileIdentifier(compiler: Compiler, node: typescript.Identifie
   typescript.setReflectedType(node, contextualType);
   return op.unreachable();
 }
+
+export { compileIdentifier as default };

@@ -5,7 +5,7 @@
     "assemblyscript": "latest"
   },
   "scripts":{
-    "build": "asc module.ts -o module.wasm"
+    "build": "asc --config asconfig.json"
   },
   "private": true
 }

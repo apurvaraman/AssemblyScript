@@ -14,7 +14,7 @@ import * as reflection from "./reflection";
 import * as ts from "../lib/typescript/build";
 import * as library from "./library";
 
-// With a little help from "Find all references" the following list aims to provide an answer to
+// With a little help of "Find all references" the following list aims to provide an answer to
 // the interesting question "Which parts of TypeScript do we actually use, and where?".
 
 export import ArrayTypeNode = ts.ArrayTypeNode;
@@ -215,12 +215,14 @@ export function isExport(node: Node): boolean {
   return false;
 }
 
-/** Tests if the specified node has a 'declare' modifier. */
+/** Tests if the specified node has a 'declare' modifier or is part of a class with a 'declare' modifier. */
 export function isDeclare(node: Node): boolean {
   if (node && node.modifiers)
     for (let i = 0, k = node.modifiers.length; i < k; ++i)
       if (node.modifiers[i].kind === SyntaxKind.DeclareKeyword)
         return true;
+  if (node.parent && node.parent.kind === SyntaxKind.ClassDeclaration)
+    return isDeclare(node.parent);
   return false;
 }
 

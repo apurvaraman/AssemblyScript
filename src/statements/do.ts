@@ -14,6 +14,7 @@ block {
 } $break
 */
 
+/** Compiles a do loop statement. */
 export function compileDo(compiler: Compiler, node: typescript.DoStatement): binaryen.Statement {
   const op = compiler.module;
 
@@ -34,3 +35,5 @@ export function compileDo(compiler: Compiler, node: typescript.DoStatement): bin
   compiler.leaveBreakContext();
   return op.block("break$" + label, context);
 }
+
+export { compileDo as default };

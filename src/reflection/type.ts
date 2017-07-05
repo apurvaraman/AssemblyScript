@@ -4,18 +4,47 @@ import Class from "./class";
 
 /** Core type kinds including range aliases. */
 export enum TypeKind {
-  FirstInteger = 0, FirstUnsigned = 0, byte = 0,
+  /** First integer of any size and signage. */
+  FirstInteger = 0,
+  /** First unsigned integer of any size. */
+  FirstUnsigned = 0,
+  /** Unsigned 8-bit integer type. */
+  byte = 0,
+  /** Unsigned 16-bit integer type. */
   ushort = 1,
+  /** Unsigned 32-bit integer type. */
   uint = 2,
+  /** Unsigned 64-bit integer type. */
   ulong = 3,
-  bool = 4,
-  LastUnsigned = 5, uintptr = 5,
-  FirstSigned = 6, sbyte = 6,
-  short = 7,
-  int = 8,
-  LastSigned = 9, LastInteger = 9, long = 9,
-  FirstFloat = 10, float = 10,
-  LastFloat = 11, double = 11,
+  /** Last unsigned integer of any size. */
+  LastUnsigned = 4,
+  /** Unsigned 32-/64-bit pointer type. */
+  uintptr = 4,
+  /** First signed integer of any size. */
+  FirstSigned = 5,
+  /** Signed 8-bit integer type. */
+  sbyte = 5,
+  /** Signed 16-bit integer type. */
+  short = 6,
+  /** Signed 32-bit integer type. */
+  int = 7,
+  /** Last signed integer of any size. */
+  LastSigned = 8,
+  /** Last integer of any size and signage. */
+  LastInteger = 8,
+  /** Signed 64-bit integer type. */
+  long = 8,
+  /** First float of any size. */
+  FirstFloat = 9,
+  /** 32-bit float type. */
+  float = 9,
+  /** Last float of any size. */
+  LastFloat = 10,
+  /** 64-bit float type. */
+  double = 10,
+  /** Bool type. */
+  bool = 11,
+  /** Void type. */
   void = 12
 }
 
@@ -35,31 +64,6 @@ export class Type {
     this.size = size;
     this.underlyingClass = underlyingClass;
   }
-
-  /* get logAlignment(): number {
-    switch (this.kind) {
-      case TypeKind.sbyte:
-      case TypeKind.byte:
-        return 0;
-      case TypeKind.short:
-      case TypeKind.ushort:
-        return 1;
-      case TypeKind.int:
-      case TypeKind.uint:
-      case TypeKind.float:
-        return 2;
-      case TypeKind.long:
-      case TypeKind.ulong:
-      case TypeKind.double:
-        return 3;
-      case TypeKind.uintptr:
-        if (this.size === 4)
-          return 2;
-        else
-          return 3;
-    }
-    return 0;
-  } */
 
   /** Tests if this is an integer type of any size. */
   get isAnyInteger(): boolean { return this.kind >= TypeKind.FirstInteger && this.kind <= TypeKind.LastInteger; }
@@ -100,30 +104,30 @@ export class Type {
 export { Type as default };
 
 /** Reflected signed 8-bit integer type. */
-export const sbyteType = new Type(TypeKind.sbyte  , 1);
+export const sbyteType = new Type(TypeKind.sbyte, 1);
 /** Reflected unsigned 8-bit integer type. */
-export const byteType = new Type(TypeKind.byte   , 1);
+export const byteType = new Type(TypeKind.byte, 1);
 /** Reflected signed 16-bit integer type. */
-export const shortType = new Type(TypeKind.short  , 2);
+export const shortType = new Type(TypeKind.short, 2);
 /** Reflected unsigned 16-bit integer type. */
-export const ushortType = new Type(TypeKind.ushort , 2);
+export const ushortType = new Type(TypeKind.ushort, 2);
 /** Reflected signed 32-bit integer type. */
-export const intType = new Type(TypeKind.int    , 4);
+export const intType = new Type(TypeKind.int, 4);
 /** Reflected unsigned 32-bit integer type. */
-export const uintType = new Type(TypeKind.uint   , 4);
+export const uintType = new Type(TypeKind.uint, 4);
 /** Reflected signed 64-bit integer type. */
-export const longType = new Type(TypeKind.long   , 8);
+export const longType = new Type(TypeKind.long, 8);
 /** Reflected unsigned 64-bit integer type. */
-export const ulongType = new Type(TypeKind.ulong  , 8);
-/** Reflected bool type. */
-export const boolType = new Type(TypeKind.bool   , 4);
+export const ulongType = new Type(TypeKind.ulong, 8);
 /** Reflected 32-bit float type. */
-export const floatType = new Type(TypeKind.float  , 4);
+export const floatType = new Type(TypeKind.float, 4);
 /** Reflected 64-bit float type. */
-export const doubleType = new Type(TypeKind.double , 8);
+export const doubleType = new Type(TypeKind.double, 8);
 /** Reflected 32-bit pointer type. Relevant only when compiling for 32-bit WebAssembly. */
 export const uintptrType32 = new Type(TypeKind.uintptr, 4);
 /** Reflected 64-bit pointer type. Relevant only when compiling for 64-bit WebAssembly. */
 export const uintptrType64 = new Type(TypeKind.uintptr, 8);
+/** Reflected bool type. */
+export const boolType = new Type(TypeKind.bool, 1);
 /** Reflected void type. */
-export const voidType = new Type(TypeKind.void   , 0);
+export const voidType = new Type(TypeKind.void, 0);
