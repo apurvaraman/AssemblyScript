@@ -14,10 +14,15 @@ export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLi
     const sizeArgument = op.i32.const(node.elements.length);
     const clazz = <reflection.Class>contextualType.underlyingClass;
     const elementType = Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type);
+    return compileArrayWithType(compiler, sizeArgument, elementType[0]);
+}
+
+export function compileArrayWithType(compiler: Compiler, sizeArgument: binaryen.I32Expression, elementType: type.Type): binaryen.Expression {
     const uintptrCategory = binaryen.categoryOf(compiler.uintptrType, compiler.module, compiler.uintptrSize);
     const newsize = compiler.currentFunction.localsByName[".newsize"] || compiler.currentFunction.addLocal(".newsize", compiler.uintptrType);
     const newptr = compiler.currentFunction.localsByName[".newptr"] || compiler.currentFunction.addLocal(".newptr", compiler.uintptrType);
     const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
+    const op = compiler.module;
 
     return op.block("", [
      op.i32.store(
@@ -29,7 +34,7 @@ export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLi
             uintptrCategory.add(
               binaryen.valueOf(compiler.uintptrType, op, reflection.uintType.size), // length as an (u)int
               uintptrCategory.mul(
-                binaryen.valueOf(compiler.uintptrType, op, elementType[0].size),
+                binaryen.valueOf(compiler.uintptrType, op, elementType.size),
                 op.teeLocal(newsize.index, sizeArgument)
               )
             )
@@ -65,7 +70,6 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
           case(type.ushortType):
           case(type.uintType):
           case(type.uintptrType32):
-          case(type.uintptrType64):
           case(type.intType):
             initializers.push(
               op.i32.store(
@@ -96,6 +100,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
               )
             );
             break;
+          case(type.uintptrType64):
           case(type.ulongType):
           case(type.longType):
             initializers.push(
@@ -108,6 +113,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
             );
             break;
         }
+        // throw Error("unexpected type");
       }
 }
 
