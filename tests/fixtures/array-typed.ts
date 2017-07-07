@@ -1,4 +1,4 @@
-//! { "memoryModel": "malloc" }
+//! { "memoryModel": "importmalloc" }
 
 export function test(): void {
   let s8: Int8Array = new Int8Array(1);

@@ -32,7 +32,7 @@ export function compileWhile(compiler: Compiler, node: typescript.WhileStatement
   context.push(
     op.loop("continue$" + label,
       op.if(
-        compiler.maybeConvertValue(node.expression, compiler.compileExpression(node.expression, reflection.intType), typescript.getReflectedType(node.expression), reflection.intType, true),
+        compiler.compileExpression(node.expression, reflection.intType, reflection.intType, true),
         ifTrue.length === 1 ? ifTrue[0] : op.block("", ifTrue)
       )
     )

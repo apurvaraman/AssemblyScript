@@ -14,20 +14,18 @@ export class Property {
   type: Type;
   /** Offset in memory, if applicable. */
   offset: number;
-  /** Constant value, if applicable. */
-  constantValue?: any;
+  /** Initializer expression, if applicable. */
+  initializer: typescript.Expression | undefined;
 
   /** Constructs a new reflected property. */
-  constructor(name: string, declaration: typescript.PropertyDeclaration | typescript.EnumMember, type: Type, offset: number, constantValue?: any) {
+  constructor(name: string, declaration: typescript.PropertyDeclaration | typescript.EnumMember, type: Type, offset: number, initializer?: typescript.Expression) {
     this.name = name;
     this.declaration = declaration;
     this.type = type;
     this.offset = offset;
-    this.constantValue = constantValue;
+    this.initializer = initializer;
   }
 
-  /** Tests if this property has a constant value. */
-  get isConstant(): boolean { return this.constantValue !== undefined;}
   /** Tests if this property is an instance member / not static. */
   get isInstance(): boolean { return this.declaration.kind !== typescript.SyntaxKind.EnumMember && !typescript.isStatic(this.declaration); }
 

@@ -3,6 +3,8 @@ export * from "../lib/loader";
 import * as Long from "long";
 export { Long };
 
+export const arrayHeaderSize = 8;
+
 export function hexdump(buffer: Uint8Array, offset: number, length: number): string {
   var out: string[] = [];
   for (let i = 0; i < length; ++i) {

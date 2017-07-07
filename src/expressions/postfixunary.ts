@@ -32,7 +32,7 @@ export function compilePostfixUnary(compiler: Compiler, node: typescript.Postfix
           );
 
           if (local.type.isByte || local.type.isShort)
-            calculate = compiler.maybeConvertValue(node, calculate, reflection.intType, local.type, true);
+            calculate = compiler.maybeConvertValue(node, calculate, reflection.intType, local.type, true); // mask or sign-extend
 
           if (contextualType === reflection.voidType) {
             typescript.setReflectedType(node, reflection.voidType);

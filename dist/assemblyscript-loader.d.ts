@@ -32,8 +32,8 @@ declare module 'assemblyscript-loader' {
   
   /** Array memory accessor. */
   export interface IArrayMemoryAccessor {
-    /** Gets an array from memory at the specified pointer and returns its length and element base pointer. */
-    get(ptr: number): { length: number, base: number };
+    /** Gets an array from memory at the specified pointer and returns its capacity, length and element base pointer. */
+    get(ptr: number): { capacity: number, length: number, base: number };
     /** Creates an array in memory and returns its pointer and element base pointer. */
     create(length: number, elementByteSize: number): { ptr: number, base: number };
   }

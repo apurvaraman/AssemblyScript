@@ -7,10 +7,16 @@ var options = require("./asc.json");
 var assemblyscript;
 
 var isDev = fs.existsSync(__dirname + "/../src/index.ts") && path.basename(path.join(__dirname, "..", "..")) !== "node_modules";
+var isOut = false;
 
 if (isDev) {
-  require("ts-node/register");
-  assemblyscript = require("../out");
+  if (fs.existsSync(__dirname + "/../out/index.js")) {
+    assemblyscript = require("../out");
+    isOut = true;
+  } else {
+    require("ts-node/register");
+    assemblyscript = require("../src");
+  }
 } else
   assemblyscript = require("../dist/assemblyscript");
 
@@ -74,7 +80,7 @@ function main(args, callback) {
   // print usage information if requested or no input files have been provided
   if (argv.help || files.length !== 1) {
     (argv.help ? process.stdout : process.stderr).write([
-      "Version " + pkg.version + (isDev ? "-dev" : ""),
+      "Version " + pkg.version + (isDev ? "-dev" + (isOut ? " (out)" : "") : ""),
       "Syntax: "+ chalk.reset.cyan.bold("asc") + " [options] entryFile",
       "",
       chalk.reset.white.bold("Options:"),

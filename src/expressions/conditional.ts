@@ -9,15 +9,9 @@ import * as typescript from "../typescript";
 export function compileConditional(compiler: Compiler, node: typescript.ConditionalExpression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
-  const condition = compiler.maybeConvertValue(
-    node.condition,
-    compiler.compileExpression(node.condition, reflection.intType),
-    typescript.getReflectedType(node.condition),
-    reflection.intType,
-    true
-  );
-  const ifTrue  = compiler.compileExpression(node.whenTrue, contextualType);
-  const ifFalse = compiler.compileExpression(node.whenFalse, contextualType);
+  const condition = compiler.compileExpression(node.condition, reflection.intType, reflection.intType, true);
+  const ifTrue    = compiler.compileExpression(node.whenTrue, contextualType, contextualType, false);
+  const ifFalse   = compiler.compileExpression(node.whenFalse, contextualType, contextualType, false);
 
   typescript.setReflectedType(node, contextualType);
   return op.select(condition, ifTrue, ifFalse);

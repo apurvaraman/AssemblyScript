@@ -12,6 +12,14 @@ export function getArray(): int[] {
   return a;
 }
 
+export function getArrayCapacity(): int {
+  return a.capacity;
+}
+
+export function getArrayLength(): int {
+  return a.length;
+}
+
 export function getArrayElement(i: uint): int {
   return a[i];
 }

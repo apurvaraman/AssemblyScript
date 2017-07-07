@@ -7,7 +7,12 @@ import * as minimist from "minimist";
 import * as util from "./util";
 
 const argv = minimist(process.argv.slice(2), {
-  default: { "create": false, "src": true, "dist": true },
+  default: {
+    create: false,
+    src: true,
+    dist: true,
+    diff: true
+  },
   boolean: [ "help", "create", "src", "dist" ]
 });
 
@@ -21,6 +26,7 @@ if (argv.help) {
     " --create               Creates missing fixtures from the current runs output.",
     " --no-src               Does not test the sources.",
     " --no-dist              Does not test the distribution.",
+    " --no-diff              Does not print diff contents.",
     "",
     "For pretty-printed output, run: npm run test:spec",
     ""
@@ -62,8 +68,9 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
 
         try {
           module = <binaryen.Module>Compiler.compileFile(file, options);
-        } catch (e) {
+        } catch (err) {
           test.fail("should compile without throwing");
+          console.log(err.stack.replace(/^/mg, "> "));
           test.end();
           return;
         }
@@ -82,19 +89,22 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
 
           if (fs.existsSync(wastFile)) {
             const expected = distill(fs.readFileSync(wastFile, "utf8"));
-            const diff = jsdiff.diffChars(expected, actual);
-            let changed = false;
-            diff.forEach(part => {
-              if (part.added || part.removed)
-                changed = true;
-            });
-            test.notOk(changed, "should match the precompiled fixture");
-            if (changed) // print a diff
+            if (argv.diff) {
+              const diff = jsdiff.diffChars(expected, actual);
+              let changed = false;
               diff.forEach(part => {
                 if (part.added || part.removed)
                   changed = true;
-                process.stderr.write((part.added ? chalk.green : part.removed ? chalk.red : chalk.grey)(part.value));
               });
+              test.notOk(changed, "should match the precompiled fixture");
+              if (changed) // print it
+                diff.forEach(part => {
+                  if (part.added || part.removed)
+                    changed = true;
+                  process.stderr.write((part.added ? chalk.green : part.removed ? chalk.red : chalk.grey)(part.value));
+                });
+            } else if (expected !== actual)
+              test.fail("should match the precompiled fixture");
           } else {
             if (argv["create"]) {
               test.comment("creating fixture: " + wastFile);
@@ -133,8 +143,9 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
       let module: binaryen.Module;
       try {
         module = <binaryen.Module>Compiler.compileFile(file, options);
-      } catch (e) {
+      } catch (err) {
         test.fail(name + ".ts should compile without throwing");
+        console.log(err.stack.replace(/^/mg, "> "));
         return;
       }
 
@@ -153,6 +164,7 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
         .then(module => runner(test, module))
         .catch(err => {
           test.fail("loading " + name + ".wasm should not be rejected (" + err.message + ")");
+          console.log(err.stack.replace(/^/mg, "> "));
           test.end();
         });
       });

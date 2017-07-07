@@ -34,6 +34,7 @@ export import DiagnosticCategory = ts.DiagnosticCategory;
 export import DiagnosticCollection = ts.DiagnosticCollection;
 export import DiagnosticMessage = ts.DiagnosticMessage;
 export import Diagnostic = ts.Diagnostic;
+export import Diagnostics = ts.Diagnostics;
 export import DoStatement = ts.DoStatement;
 export import ElementAccessExpression = ts.ElementAccessExpression;
 export import EnumDeclaration = ts.EnumDeclaration;
@@ -90,6 +91,7 @@ export import getPreEmitDiagnostics = ts.getPreEmitDiagnostics;
 export import getSourceFileOfNode = ts.getSourceFileOfNode;
 export import getTextOfNode = ts.getTextOfNode;
 export import createDiagnosticCollection = ts.createDiagnosticCollection;
+export import createDiagnosticForNode = ts.createDiagnosticForNode;
        import createGetCanonicalFileName = ts.createGetCanonicalFileName;
 export import createProgram = ts.createProgram;
 export import createSourceFile = ts.createSourceFile;
@@ -170,7 +172,7 @@ export function createCompilerHost(moduleSearchLocations: string[], entryFileSou
 }
 
 /** Creates a diagnostic message referencing a node. */
-export function createDiagnosticForNode(node: Node, category: DiagnosticCategory, message: string, arg1?: string) {
+export function createDiagnosticForNodeEx(node: Node, category: DiagnosticCategory, message: string, arg1?: string) {
   let realMessage = message;
   if (arg1 != null)
     realMessage += ": " + arg1;
@@ -314,3 +316,19 @@ export function setReflectedClassTemplate(node: ClassDeclaration, template: refl
     throw Error("template cannot be null");
   (<any>node).reflectedClassTemplate = template;
 }
+
+function AS(code: number, message: string, category = DiagnosticCategory.Error): DiagnosticMessage {
+  return {
+    code: <number><any>"/AS" + code,
+    category,
+    key: message.toLowerCase(),
+    message: message
+  };
+}
+
+// TODO: decide if we need something like this
+export const DiagnosticsEx = {
+
+  Unresolvable_type: AS(1000, "Unresolvable type.")
+
+};

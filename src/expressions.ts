@@ -88,7 +88,7 @@ export function compile(compiler: Compiler, node: typescript.Expression, context
       if (compiler.currentFunction.isInstance && compiler.currentFunction.parent)
         typescript.setReflectedType(node, compiler.currentFunction.parent.type);
       else
-        compiler.error(node, "'this' used in non-instance context");
+        compiler.error(node, typescript.Diagnostics.this_cannot_be_referenced_in_current_location);
       return op.getLocal(0, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize));
 
     case typescript.SyntaxKind.TrueKeyword:

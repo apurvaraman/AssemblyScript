@@ -30,6 +30,7 @@
     "build:bundle-loader": "node scripts/build-bundle-loader",
     "build:bundle": "tsc -P src && node scripts/build-bundle",
     "build": "npm run lint && npm run build:library && npm run build:bundle && npm run build:bundle-loader",
+    "clean": "node scripts/clean",
     "lint": "tslint --config tslint.json src/**/*.ts cli/**/*.ts assembly.d.ts",
     "test": "ts-node tests",
     "test:spec": "ts-node tests | tap-spec",
@@ -38,7 +39,7 @@
     "docs": "npm run docs:api && npm run docs:std"
   },
   "dependencies": {
-    "binaryen": "1.37.14",
+    "binaryen": "1.37.14-nightly.20170706",
     "chalk": "^1.1.3",
     "minimist": "^1.2.0",
     "wabt": "0.0.13-nightly.20170628"

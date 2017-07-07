@@ -8,13 +8,12 @@
  */ /** */
 
 import * as binaryen from "./binaryen";
+import Compiler from "./compiler";
 import * as reflection from "./reflection";
 import * as typescript from "./typescript";
 
-import Compiler from "./compiler";
-
 /** Tests if the specified function name corresponds to a built-in function. */
-export function isBuiltin(name: string, isGlobalName: boolean = false): boolean {
+export function isBuiltin(name: string, isGlobalName: boolean = true): boolean {
   if (isGlobalName) {
     // Builtins are declared in assembly.d.ts exclusively
     if (name.substring(0, 14) !== "assembly.d.ts/") return false;
@@ -65,6 +64,28 @@ export function isBuiltin(name: string, isGlobalName: boolean = false): boolean 
     case "isNaNf":
     case "isFinite":
     case "isFinitef":
+      return true;
+  }
+  return false;
+}
+
+/** Tests if the specified function name corresponds to a linked library function. */
+export function isLibrary(name: string, isGlobalName: boolean = true): boolean {
+  if (isGlobalName) {
+    // Builtins are declared in assembly.d.ts exclusively
+    if (name.substring(0, 14) !== "assembly.d.ts/") return false;
+    name = name.substring(14);
+    const p = name.indexOf("<");
+    if (p > -1)
+      name = name.substring(0, p);
+  }
+  switch (name) {
+    case "malloc_init":
+    case "malloc":
+    case "memset":
+    case "memcpy":
+    case "memcmp":
+    case "free":
       return true;
   }
   return false;
@@ -399,10 +420,11 @@ export function unreachable(compiler: Compiler): binaryen.Expression {
 /** Compiles a sizeof operation determining the byte size of a type. */
 export function sizeof(compiler: Compiler, type: reflection.Type): binaryen.Expression {
   const op = compiler.module;
+  const size = type.underlyingClass ? type.underlyingClass.size : type.size;
 
   return compiler.uintptrType === reflection.uintptrType32
-    ? op.i32.const(type.size)
-    : op.i64.const(type.size, 0);
+    ? op.i32.const(size)
+    : op.i64.const(size, 0); // TODO: long?
 }
 
 /** Compiles an unsafe cast operation casting a value from one type to another. */

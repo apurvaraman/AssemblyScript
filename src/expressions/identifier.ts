@@ -25,7 +25,7 @@ export function compileIdentifier(compiler: Compiler, node: typescript.Identifie
     }
 
   }
-  compiler.error(node, "Unresolvable identifier", node.text);
+  compiler.error(node, typescript.Diagnostics.Cannot_find_name_0, node.text);
   typescript.setReflectedType(node, contextualType);
   return op.unreachable();
 }

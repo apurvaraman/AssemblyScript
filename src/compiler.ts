@@ -261,24 +261,30 @@ export class Compiler {
   }
 
   /** Adds an informative diagnostic to {@link Compiler#diagnostics} and prints it. */
-  info(node: typescript.Node, message: string, arg1?: string): void {
-    const diagnostic = typescript.createDiagnosticForNode(node, typescript.DiagnosticCategory.Message, message, arg1);
+  info(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void {
+    const diagnostic = typeof message === "string"
+      ? typescript.createDiagnosticForNodeEx(node, typescript.DiagnosticCategory.Message, message, arg1)
+      : typescript.createDiagnosticForNode(node, message, arg1);
     this.diagnostics.add(diagnostic);
     if (!(this.options && this.options.silent))
       typescript.printDiagnostic(diagnostic);
   }
 
   /** Adds a warning diagnostic to {@link Compiler#diagnostics} and prints it. */
-  warn(node: typescript.Node, message: string, arg1?: string): void {
-    const diagnostic = typescript.createDiagnosticForNode(node, typescript.DiagnosticCategory.Warning, message, arg1);
+  warn(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void {
+    const diagnostic = typeof message === "string"
+      ? typescript.createDiagnosticForNodeEx(node, typescript.DiagnosticCategory.Warning, message, arg1)
+      : typescript.createDiagnosticForNode(node, message, arg1);
     this.diagnostics.add(diagnostic);
     if (!(this.options && this.options.silent))
       typescript.printDiagnostic(diagnostic);
   }
 
   /** Adds an error diagnostic to {@link Compiler#diagnostics} and prints it. */
-  error(node: typescript.Node, message: string, arg1?: string): void {
-    const diagnostic = typescript.createDiagnosticForNode(node, typescript.DiagnosticCategory.Error, message, arg1);
+  error(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void {
+    const diagnostic = typeof message === "string"
+      ? typescript.createDiagnosticForNodeEx(node, typescript.DiagnosticCategory.Error, message, arg1)
+      : typescript.createDiagnosticForNode(node, message, arg1);
     this.diagnostics.add(diagnostic);
     if (!(this.options && this.options.silent))
       typescript.printDiagnostic(diagnostic);
@@ -435,10 +441,10 @@ export class Compiler {
         if (type)
           this.addGlobal(name, type, !typescript.isConst(node.declarationList), initializerNode);
         else
-          this.error(declaration.type, "Unresolvable type");
+          this.error(declaration.type, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(declaration.type));
 
       } else
-        this.error(declaration.name, "Type expected");
+        this.error(declaration.name, typescript.Diagnostics.Type_expected);
     }
   }
 
@@ -466,13 +472,7 @@ export class Compiler {
         this.currentFunction = this.startFunction;
 
         this.globalInitializers.push(
-          op.setGlobal(name,
-            this.maybeConvertValue(
-              initializerNode,
-              this.compileExpression(initializerNode, type),
-              typescript.getReflectedType(initializerNode), type, false
-            )
-          )
+          op.setGlobal(name, this.compileExpression(initializerNode, type, type, false))
         );
 
         if (initializerNode.kind === typescript.SyntaxKind.ArrayLiteralExpression) {
@@ -516,16 +516,18 @@ export class Compiler {
     if (!pooled) {
       if (this.memoryBase & 3) this.memoryBase = (this.memoryBase | 3) + 1; // align to 4 bytes (length is an int)
       const length = value.length;
-      const buffer = new Uint8Array(4 + 2 * length);
+      const buffer = new Uint8Array(8 + 2 * length);
       if (length < 0 || length > 0x7fffffff)
         throw Error("string length exceeds INTMAX");
 
-      // Prepend length
+      // Prepend header (capacity = length)
       let offset = 0;
       buffer[offset++] =  length         & 0xff;
       buffer[offset++] = (length >>>  8) & 0xff;
       buffer[offset++] = (length >>> 16) & 0xff;
       buffer[offset++] = (length >>> 24) & 0xff;
+      for (let i = 0; i < 4; ++i)
+        buffer[offset++] = buffer[i];
 
       // Append UTF-16LE chars
       for (let i = 0; i < length; ++i) {
@@ -568,7 +570,7 @@ export class Compiler {
     if (!template) { // not already initialized
       template = this.functionTemplates[name] = new reflection.FunctionTemplate(name, node);
       if (template.isGeneric) {
-        if (builtins.isBuiltin(name)) // generic builtins evaluate type parameters dynamically and have a known return type
+        if (builtins.isBuiltin(name, false)) // generic builtins evaluate type parameters dynamically and have a known return type
           typescript.setReflectedFunction(node, new reflection.Function(name, template, {}, [], this.resolveType(<typescript.TypeNode>template.declaration.type, true)));
       } else {
         instance = this.functions[name] = template.resolve(this, []);
@@ -642,7 +644,7 @@ export class Compiler {
       this.warn(node.name, "Exporting enums is not supported yet");
 
     const instance = this.enums[name] = new reflection.Enum(name, node);
-    instance.initialize(this);
+    instance.initialize(/* this */);
   }
 
   /** Compiles the module and its components. */
@@ -733,7 +735,7 @@ export class Compiler {
     if (
       this.memoryModel === CompilerMemoryModel.IMPORT_MALLOC
     ) {
-      body.push(op.call("malloc_init", [
+      body.push(op.callImport("malloc_init", [
         binaryen.valueOf(this.uintptrType, op, this.memoryBase)
       ], binaryen.none));
     }
@@ -780,13 +782,14 @@ export class Compiler {
   compileMallocInvocation(size: number, clearMemory: boolean = true): binaryen.Expression {
     const op = this.module;
     const binaryenPtrType = binaryen.typeOf(this.uintptrType, this.uintptrSize);
+    const mallocIsBuiltin = this.memoryModel === CompilerMemoryModel.MALLOC || this.memoryModel === CompilerMemoryModel.EXPORT_MALLOC;
 
     // Simplify if possible but always obtain a pointer for consistency
     if (size === 0 || !clearMemory)
-      return op.call("malloc", [ binaryen.valueOf(this.uintptrType, op, size) ], binaryenPtrType);
+      return (mallocIsBuiltin ? op.call : op.callImport)("malloc", [ binaryen.valueOf(this.uintptrType, op, size) ], binaryenPtrType);
 
-    return op.call("memset", [
-      op.call("malloc", [ // use wrapped malloc here so mspace_malloc can be inlined
+    return (mallocIsBuiltin ? op.call : op.callImport)("memset", [
+      (mallocIsBuiltin ? op.call : op.callImport)("malloc", [ // use wrapped malloc here so mspace_malloc can be inlined
         binaryen.valueOf(this.uintptrType, op, size)
       ], binaryenPtrType),
       op.i32.const(0), // 2nd memset argument is int
@@ -843,24 +846,33 @@ export class Compiler {
       ));
     }
 
-    // Constructors implicitly allocate memory and return 'this' by default
-    // Can be disabled with the 'no_implicit_malloc' decorator for explicit memory allocation.
+    const binaryenPtrType = binaryen.typeOf(this.uintptrType, this.uintptrSize);
+
     if (instance.isConstructor && (<reflection.Class>instance.parent).implicitMalloc) {
-      let thisVar = instance.localsByName.this;
-      if (!thisVar)
-        thisVar = instance.addLocal("this", instance.returnType);
-      body.unshift(
-        op.setLocal(
-          thisVar.index,
-          this.compileMallocInvocation((<reflection.Class>instance.parent).size)
-        )
-      );
+
+      // constructors implicitly return 'this' if implicit malloc is enabled
       body.push(
         op.return(
-          op.getLocal(thisVar.index, binaryen.typeOf(thisVar.type, this.uintptrSize))
+          op.getLocal(0, binaryenPtrType)
         )
       );
-    }
+
+      // initialize instance properties
+      const properties = (<reflection.Class>instance.parent).properties;
+      let bodyIndex = 0;
+      Object.keys(properties).forEach(key => {
+        const property = properties[key];
+        if (property.isInstance && property.initializer) {
+          body.splice(bodyIndex++, 0,
+            compileStore(this, property.initializer, property.type,
+              op.getLocal(0, binaryenPtrType), property.offset,
+              this.compileExpression(property.initializer, property.type, property.type, false)
+            )
+          );
+        }
+      });
+
+    } // TODO: what to do with instance property initializers with explicit malloc? set afterwards, using the ctor's return value?
 
     const additionalLocals = instance.locals.slice(initialLocalsIndex).map(local => binaryen.typeOf(local.type, this.uintptrSize));
     const binaryenFunction = instance.binaryenFunction = this.module.addFunction(instance.name, instance.binaryenSignature, additionalLocals, op.block("", body));
@@ -926,8 +938,11 @@ export class Compiler {
   }
 
   /** Compiles an expression. */
-  compileExpression(node: typescript.Expression, contextualType: reflection.Type): binaryen.Expression {
-    return expressions.compile(this, node, contextualType);
+  compileExpression(node: typescript.Expression, contextualType: reflection.Type, convertToType?: reflection.Type, convertExplicit: boolean = false): binaryen.Expression {
+    let expr = expressions.compile(this, node, contextualType);
+    if (convertToType)
+      expr = this.maybeConvertValue(node, expr, typescript.getReflectedType(node), convertToType, convertExplicit);
+    return expr;
   }
 
   /** Wraps an expression with a conversion where necessary. */
@@ -998,12 +1013,12 @@ export class Compiler {
         case reflection.uintType:
         case reflection.uintptrType32:
         case reflection.boolType:
-          return this.maybeConvertValue(node, op.i32.trunc_u.f64(expr), reflection.intType, toType, explicit);
+          return this.maybeConvertValue(node, op.i32.trunc_u.f64(expr), reflection.intType, toType, explicit); // maybe mask
 
         case reflection.sbyteType:
         case reflection.shortType:
         case reflection.intType:
-          return this.maybeConvertValue(node, op.i32.trunc_s.f64(expr), reflection.intType, toType, explicit);
+          return this.maybeConvertValue(node, op.i32.trunc_s.f64(expr), reflection.intType, toType, explicit); // maybe sign extend
 
         case reflection.ulongType:
         case reflection.uintptrType64:

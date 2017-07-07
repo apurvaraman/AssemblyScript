@@ -164,34 +164,37 @@ export class Class extends ClassBase {
             const propertyName = typescript.getTextOfNode(propertyDeclaration.name);
             const propertyType = compiler.resolveType(propertyDeclaration.type);
             if (propertyType) {
-              this.properties[propertyName] = new Property(propertyName, propertyDeclaration, propertyType, this.size);
-              if (typescript.isStatic(propertyDeclaration)) // static properties become globals, TODO: const
+              this.properties[propertyName] = new Property(propertyName, propertyDeclaration, propertyType, this.size, propertyDeclaration.initializer);
+              if (typescript.isStatic(propertyDeclaration))
                 compiler.addGlobal(this.name + "." + propertyName, propertyType, true, propertyDeclaration.initializer);
               else
                 this.size += propertyType.size;
             } else
-              compiler.error(propertyDeclaration.type, "Unresolvable type");
+              compiler.error(propertyDeclaration.type, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(propertyDeclaration.type));
           } else
-            compiler.error(propertyDeclaration.name, "Type expected");
+            compiler.error(propertyDeclaration.name, typescript.Diagnostics.Type_expected);
           break;
         }
 
         case typescript.SyntaxKind.Constructor:
         {
-          // 'super' is managed by TypeScript
           const constructorNode = <typescript.ConstructorDeclaration>member;
           const localInitializers: number[] = [];
           for (let j = 0, l = constructorNode.parameters.length; j < l; ++j) {
             const parameterNode = constructorNode.parameters[j];
             if (parameterNode.modifiers && parameterNode.modifiers.length) {
               const name = typescript.getTextOfNode(parameterNode.name);
-              const type = compiler.resolveType(<typescript.TypeNode>parameterNode.type);
-              if (type) {
-                this.properties[name] = new Property(name, /* works, somehow: */ <typescript.PropertyDeclaration>member, type, this.size);
-                localInitializers.push(j);
-                this.size += type.size;
+              if (parameterNode.type) {
+                const type = compiler.resolveType(parameterNode.type);
+                if (type) {
+                  this.properties[name] = new Property(name, <typescript.PropertyDeclaration>member, type, this.size);
+                  localInitializers.push(j);
+                  this.size += type.size;
+                } else {
+                  compiler.error(parameterNode.type, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(parameterNode.type));
+                }
               } else {
-                compiler.error(parameterNode, "Unresolvable type");
+                compiler.error(parameterNode, typescript.Diagnostics.Type_expected);
               }
             }
           }

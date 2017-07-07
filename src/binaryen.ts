@@ -35,7 +35,7 @@ export import F32Operations = binaryen.F32Operations;
 export import F64Operations = binaryen.F64Operations;
 export import readBinary = binaryen.readBinary;
 
-/** Computes a human readable signature identifier of a reflected type. */
+/** Computes the signature identifier of a reflected type. */
 export function identifierOf(type: reflection.Type, uintptrSize: number): string {
   switch (type.kind) {
 

@@ -26,10 +26,31 @@ export function compileCall(compiler: Compiler, node: typescript.CallExpression,
     const classType = typescript.getReflectedType(accessNode.expression);
     let method: reflection.ClassMethod;
     if (!classType || !classType.underlyingClass || !(method = classType.underlyingClass.methods[methodName])) {
-      compiler.error(node, "Unresolvable call target");
+      compiler.error(accessNode.name, typescript.Diagnostics.Cannot_find_name_0, methodName);
       return op.unreachable();
     }
     declaration = method.template.declaration;
+
+  // Super constructor call
+  } else if (node.expression.kind === typescript.SyntaxKind.SuperKeyword) {
+    const currentClass = compiler.currentFunction.parent;
+    if (!(currentClass && currentClass.base)) {
+      compiler.error(node.expression, typescript.Diagnostics.super_can_only_be_referenced_in_a_derived_class);
+      return op.unreachable();
+    }
+    const superClass = currentClass.base;
+    let ctor = superClass.ctor;
+    while (!(ctor && ctor.body) && superClass.base) {
+      ctor = superClass.base.ctor;
+    }
+    if (!ctor)
+      return op.nop(); // no explicit parent constructor
+    if (!ctor.body) {
+      compiler.error(node.expression, "'super' does not refer to an implementation");
+      return op.unreachable();
+    }
+    declaration = ctor.declaration;
+    thisArg = op.getLocal(compiler.currentFunction.localsByName.this.index, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize));
 
   } else {
     compiler.error(node, "Unsupported call expression", "SyntaxKind " + node.expression.kind);
@@ -37,7 +58,7 @@ export function compileCall(compiler: Compiler, node: typescript.CallExpression,
   }
 
   if (!declaration) {
-    compiler.error(node, "Unresolvable call target");
+    compiler.error(node, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(node.expression));
     return op.unreachable();
   }
 
@@ -60,7 +81,7 @@ export function compileCall(compiler: Compiler, node: typescript.CallExpression,
       if (!template.isGeneric)
         typescript.setReflectedFunction(declaration, instance);
     } else {
-      compiler.error(node, "Unresolvable call target", typescript.getTextOfNode(<typescript.Identifier>declaration.name));
+      compiler.error(node, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(<typescript.Identifier>declaration.name));
       typescript.setReflectedType(node, contextualType);
       return op.unreachable();
     }
@@ -83,7 +104,7 @@ export function compileCall(compiler: Compiler, node: typescript.CallExpression,
         const argument = node.typeArguments[i];
         const resolvedType = compiler.resolveType(argument, false, typeArgumentsMap);
         if (!resolvedType) {
-          compiler.error(node.typeArguments[i], "Unresolvable type");
+          compiler.error(node.typeArguments[i], typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(argument));
           return op.unreachable();
         }
         typeArguments[i] = resolvedType;
@@ -96,14 +117,8 @@ export function compileCall(compiler: Compiler, node: typescript.CallExpression,
       return op.unreachable();
     }
     const argumentExpressions: binaryen.Expression[] = new Array(instance.parameters.length);
-    for (let i = 0, k = instance.parameters.length; i < k; ++i) {
-      argumentExpressions[i] = compiler.maybeConvertValue(
-        node.arguments[i],
-        compiler.compileExpression(node.arguments[i], instance.parameters[i].type),
-        typescript.getReflectedType(node.arguments[i]), instance.parameters[i].type,
-        false
-      );
-    }
+    for (let i = 0, k = instance.parameters.length; i < k; ++i)
+      argumentExpressions[i] = compiler.compileExpression(node.arguments[i], instance.parameters[i].type, instance.parameters[i].type, false);
 
     switch (instance.simpleName) {
 
@@ -194,21 +209,28 @@ export function compileCall(compiler: Compiler, node: typescript.CallExpression,
     }
   }
 
-  // Call implementation or import
+  // Call implementation or import (compile if not yet compiled)
   if (!instance.compiled && instance.body)
     compiler.compileFunction(instance); // sets instance.compiled = true
 
   const argumentNodes: typescript.Expression[] = [];
-  if (instance.isInstance) { // include 'this'
-    if (node.expression.kind !== typescript.SyntaxKind.PropertyAccessExpression) {
-      compiler.error(node.expression, "Cannot call instance method as static method");
+
+  // account for the case where TypeScript was able to resolve the function signature above, in
+  // which case 'this' hasn't been handled yet
+  if (thisArg === undefined && instance.isInstance) {
+    if (node.expression.kind === typescript.SyntaxKind.PropertyAccessExpression)
+      argumentNodes.push((<typescript.PropertyAccessExpression>node.expression).expression);
+    else if (node.expression.kind === typescript.SyntaxKind.SuperKeyword)
+      thisArg = op.getLocal(0, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize));
+    else {
+      compiler.error(node.expression, "Cannot call instance method as static method", "SyntaxKind " + node.expression.kind);
       return op.unreachable();
     }
-    argumentNodes.push((<typescript.PropertyAccessExpression>node.expression).expression);
   }
+
   Array.prototype.push.apply(argumentNodes, node.arguments);
 
-  return instance.makeCall(compiler, node, argumentNodes);
+  return instance.makeCall(compiler, node, argumentNodes, thisArg);
 }
 
 export { compileCall as default };

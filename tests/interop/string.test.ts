@@ -1,5 +1,5 @@
 import * as tape from "tape";
-import { hexdump, IModule } from "../util";
+import { hexdump, IModule, arrayHeaderSize } from "../util";
 
 export function test(test: tape.Test, module: IModule) {
 
@@ -8,7 +8,7 @@ export function test(test: tape.Test, module: IModule) {
   let ptr = exports.getString();
 
   // check initialization in static memory
-  console.log(hexdump(module.buffer, ptr, 10));
+  console.log(hexdump(module.buffer, ptr, arrayHeaderSize + 6));
   test.strictEqual(module.string.get(ptr), "abc", "should have initialized a = 'abc'");
 
   // create a new string and set it by reference
@@ -16,15 +16,15 @@ export function test(test: tape.Test, module: IModule) {
   exports.setString(stringPtr);
 
   // verify that 'a' now references the temporary string
-  console.log(hexdump(module.buffer, stringPtr, 10));
+  console.log(hexdump(module.buffer, stringPtr, arrayHeaderSize + 6));
   test.strictEqual(exports.getString(), stringPtr, "should now reference the temporary string");
   test.strictEqual(module.string.get(stringPtr), "def", "should have set a = 'def'");
 
   // replace a character in memory
-  module.u16.set(stringPtr + 4 + 2, 103); // middle char = 'g'
+  module.u16.set(stringPtr + arrayHeaderSize + 2, 103); // middle char = 'g'
 
   // verify that the character has been replaced
-  console.log(hexdump(module.buffer, stringPtr, 10));
+  console.log(hexdump(module.buffer, stringPtr, arrayHeaderSize + 6));
   test.strictEqual(exports.getString(), stringPtr, "should still reference the temporary string");
   test.strictEqual(module.string.get(stringPtr), "dgf", "should have replaced a[1] with 'g'");
 
@@ -33,7 +33,7 @@ export function test(test: tape.Test, module: IModule) {
   exports.free(stringPtr);
 
   // verify that 'a' now references the initial string
-  console.log(hexdump(module.buffer, ptr, 10));
+  console.log(hexdump(module.buffer, ptr, arrayHeaderSize + 6));
   test.strictEqual(exports.getString(), ptr, "should now reference the initial string again");
   test.strictEqual(module.string.get(ptr), "abc", "should return a = 'abc'");
 

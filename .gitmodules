@@ -1,3 +1,6 @@
 [submodule "lib/typescript"]
 	path = lib/typescript/master
 	url = https://github.com/Microsoft/TypeScript.git
+[submodule "lib/gc/master"]
+	path = lib/gc/master
+	url = https://github.com/ivmai/bdwgc.git

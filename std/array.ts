@@ -1,31 +1,29 @@
 @no_implicit_malloc()
-export class Array<T> implements IDisposable {
+export class Array<T> extends Disposable {
   readonly capacity: int;
   length: int; // can be any user-provided value
 
   constructor(capacity: int) {
+    super();
 
     // if the argument is any other number, a RangeError exception is thrown
     if (capacity < 0)
       unreachable();
 
     const elementsByteSize: uintptr = (capacity as uintptr) * sizeof<T>();
-    const ptr: uintptr = malloc(4 + elementsByteSize);
+    const ptr: uintptr = malloc(sizeof<ArrayStruct>() + elementsByteSize);
     const struct: ArrayStruct = unsafe_cast<uintptr,ArrayStruct>(ptr);
 
     struct.capacity = capacity;
     struct.length = capacity;
 
-    memset(ptr + 4, 0, elementsByteSize);
+    memset(ptr + sizeof<ArrayStruct>(), 0, elementsByteSize);
 
     return unsafe_cast<uintptr,this>(ptr);
   }
 
   indexOf(searchElement: T, fromIndex: int = 0): int {
     let length: int = this.length;
-
-    if (length < 0)
-      return -1;
     if (length > this.capacity)
       length = this.capacity;
 
@@ -50,9 +48,6 @@ export class Array<T> implements IDisposable {
 
   lastIndexOf(searchElement: T, fromIndex: int = 0x7fffffff): int {
     let length: int = this.length;
-
-    if (length < 0)
-      return -1;
     if (length > this.capacity)
       length = this.capacity;
 
@@ -75,9 +70,6 @@ export class Array<T> implements IDisposable {
 
   slice(begin: int = 0, end: int = 0x7fffffff): this {
     let length: int = this.length;
-
-    if (length < 0)
-      return unsafe_cast<Array<T>,this>(new Array<T>(0));
     if (length > this.capacity)
       length = this.capacity;
 
@@ -98,16 +90,18 @@ export class Array<T> implements IDisposable {
 
     const arrayLength: int = end - begin;
     const elementsByteSize: uintptr = (arrayLength as uintptr) * sizeof<T>();
-    const ptr: uintptr = malloc(4 + elementsByteSize);
+    const ptr: uintptr = malloc(sizeof<ArrayStruct>() + elementsByteSize);
 
     unsafe_cast<uintptr,ArrayStruct>(ptr).length = arrayLength;
-    memcpy(ptr + 4, unsafe_cast<this,uintptr>(this) + 4 + begin * sizeof<T>(), elementsByteSize);
+    memcpy(ptr + sizeof<ArrayStruct>(), unsafe_cast<this,uintptr>(this) + sizeof<ArrayStruct>() + begin * sizeof<T>(), elementsByteSize);
 
     return unsafe_cast<uintptr,this>(ptr);
   }
 
   reverse(): this {
-    const length: int = this.length;
+    let length: int = this.length;
+    if (length > this.capacity)
+      length = this.capacity;
 
     // transposes the elements of the calling array object in place, mutating the array
     for (let i: int = 0, j: int = length - 1, t: int; i < j; ++i, --j) {
@@ -118,10 +112,6 @@ export class Array<T> implements IDisposable {
 
     // and returning a reference to the array
     return this;
-  }
-
-  dispose(): void {
-    free(unsafe_cast<this,uintptr>(this));
   }
 }
 

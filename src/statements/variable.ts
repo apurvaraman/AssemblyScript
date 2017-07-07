@@ -27,10 +27,10 @@ export function compileVariableDeclarationList(compiler: Compiler, node: typescr
       const declarationTypeName = typescript.getTextOfNode(declaration.type);
       lastType = declarationType = compiler.currentFunction && compiler.currentFunction.typeArguments[declarationTypeName] && compiler.currentFunction.typeArguments[declarationTypeName].type || compiler.resolveType(declaration.type);
     } else if (lastType) {
-      compiler.warn(declaration, "Type expected", "Assuming '" + lastType + "' (same type as previous declaration)");
+      compiler.warn(declaration, typescript.Diagnostics.Type_expected, "Assuming '" + lastType + "' (same type as previous declaration)");
       declarationType = lastType;
     } else {
-      compiler.error(declaration, "Type expected");
+      compiler.error(declaration, typescript.Diagnostics.Type_expected);
       continue;
     }
     const local = compiler.currentFunction.addLocal(declarationName, declarationType);

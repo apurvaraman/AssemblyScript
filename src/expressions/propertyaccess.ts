@@ -25,17 +25,21 @@ export function compilePropertyAccess(compiler: Compiler, node: typescript.Prope
       if (valueNode)
         compiler.error(valueNode, "Cannot assign to a constant");
 
+      typescript.setReflectedType(node, reflection.intType);
+
       const enm = <reflection.Enum>reference;
       const property = enm.values[propertyName];
 
-      typescript.setReflectedType(node, reflection.intType);
-
-      if (property && property.isConstant) {
-        typescript.setReflectedType(node, property.type);
-        return binaryen.valueOf(property.type, op, property.constantValue);
+      if (property) {
+        const value = compiler.checker.getConstantValue(<typescript.EnumMember>property.declaration);
+        if (typeof value === "number") {
+          typescript.setReflectedType(node, property.type);
+          return binaryen.valueOf(property.type, op, value);
+        }
+        compiler.error(node, "Unsupported enum value", value);
+        return op.unreachable();
       }
-
-      compiler.error(node, "No such enum value", "'" + propertyName + "' on " + enm.name);
+      compiler.error(node, "No such enum value", propertyName);
       return op.unreachable();
 
     // static class properties are globals
@@ -45,18 +49,11 @@ export function compilePropertyAccess(compiler: Compiler, node: typescript.Prope
 
       if (property && !property.isInstance) {
 
-        if (property.isConstant) { // TODO: currently unused
-          if (valueNode)
-            compiler.error(valueNode, "Cannot assign to a constant");
-          typescript.setReflectedType(node, property.type);
-          return binaryen.valueOf(property.type, op, property.constantValue);
-        }
-
         const global = compiler.globals[clazz.name + "." + propertyName];
         if (global) {
 
           if (valueNode) {
-            const valueExpression = compiler.maybeConvertValue(valueNode, compiler.compileExpression(valueNode, global.type), typescript.getReflectedType(valueNode), global.type, false);
+            const valueExpression = compiler.compileExpression(valueNode, global.type, global.type, false);
 
             if (contextualType === reflection.voidType)
               return op.setGlobal(global.name, valueExpression);

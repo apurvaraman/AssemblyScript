@@ -25,7 +25,7 @@ export function compileSwitch(compiler: Compiler, node: typescript.SwitchStateme
   const op = compiler.module;
 
   if (node.caseBlock.clauses && node.caseBlock.clauses.length) {
-    const switchExpression = compiler.maybeConvertValue(node.expression, compiler.compileExpression(node.expression, reflection.intType), typescript.getReflectedType(node.expression), reflection.intType, true);
+    const switchExpression = compiler.compileExpression(node.expression, reflection.intType, reflection.intType, true);
     const label = compiler.enterBreakContext();
 
     // create a temporary variable holding the switch expression's result

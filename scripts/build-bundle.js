@@ -11,7 +11,7 @@ var fs         = require("fs");
 var path       = require("path");
 
 var prelude = fs.readFileSync(require.resolve("../lib/prelude.js"), "utf8");
-var basedir = __dirname + "/../out";
+var basedir = __dirname + "/..";
 var banner = [
   "/*!",
   " * @license AssemblyScript v" + require("../package.json").version + " (c) 2017, Daniel Wirtz",
@@ -27,9 +27,9 @@ browserify({
   basedir: basedir,
   debug: true,
   prelude: prelude,
-  preludePath: "lib/prelude.js"
+  preludePath: "./lib/prelude.js"
 })
-.add("./index.js")
+.add("./out/index.js")
 .exclude("binaryen") // required
 .exclude("wabt")     // optional...
 .exclude("buffer")
@@ -45,10 +45,10 @@ browserify({
 .bundle()
 .pipe( source("assemblyscript.js") )
 .pipe( buffer() )
-.pipe( sourcemaps.init({ loadMaps: true }) )
+.pipe( sourcemaps.init({ loadMaps: true }) ) // TODO: For some reason, this does not load tsc's source maps
 .pipe( uglify() )
 .pipe( header(banner) )
-.pipe( sourcemaps.write(".") )
+.pipe( sourcemaps.write() )
 .pipe( vfs.dest(__dirname + "/../dist") )
 .on("end", function() {
 
@@ -71,11 +71,5 @@ browserify({
     externals: false,
     referenceExternals: false
   });
-
-  // console.log("\ncleaning up ...");
-  // rimraf(__dirname + "/../out", function(err) {
-  //   if (err) throw err;
-  //   console.log("\ncomplete.");
-  // });
-
+  console.log("\ncomplete.");
 });

@@ -17,20 +17,10 @@ export function compileReturn(compiler: Compiler, node: typescript.ReturnStateme
     return op.return();
   }
 
-  if (node.expression) {
-
-    const expressionNode = <typescript.Expression>node.expression;
-    let expression = compiler.compileExpression(expressionNode, compiler.currentFunction.returnType);
-    expression = compiler.maybeConvertValue(
-      expressionNode,
-      expression,
-      typescript.getReflectedType(expressionNode),
-      compiler.currentFunction.returnType,
-      false
+  if (node.expression)
+    return op.return(
+      compiler.compileExpression(<typescript.Expression>node.expression, compiler.currentFunction.returnType, compiler.currentFunction.returnType, false)
     );
-
-    return op.return(expression);
-  }
 
   compiler.error(node, "Function must return a value", "Return type is '" + compiler.currentFunction.returnType + "'");
   return op.unreachable();

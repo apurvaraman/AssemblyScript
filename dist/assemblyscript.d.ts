@@ -97,6 +97,8 @@ declare module 'assemblyscript/builtins' {
   import Compiler from "assemblyscript/compiler";
   /** Tests if the specified function name corresponds to a built-in function. */
   export function isBuiltin(name: string, isGlobalName?: boolean): boolean;
+  /** Tests if the specified function name corresponds to a built-in malloc function. */
+  export function isBuiltinMalloc(name: string, isGlobalName?: boolean): boolean;
   /** A pair of TypeScript expressions. */
   export interface TypeScriptExpressionPair {
       0: typescript.Expression;
@@ -278,11 +280,11 @@ declare module 'assemblyscript/compiler' {
         */
       constructor(program: typescript.Program, options?: CompilerOptions);
       /** Adds an informative diagnostic to {@link Compiler#diagnostics} and prints it. */
-      info(node: typescript.Node, message: string, arg1?: string): void;
+      info(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void;
       /** Adds a warning diagnostic to {@link Compiler#diagnostics} and prints it. */
-      warn(node: typescript.Node, message: string, arg1?: string): void;
+      warn(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void;
       /** Adds an error diagnostic to {@link Compiler#diagnostics} and prints it. */
-      error(node: typescript.Node, message: string, arg1?: string): void;
+      error(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void;
       /** Mangles a global name (of a function, a class, ...) for use with binaryen. */
       mangleGlobalName(name: string, sourceFile: typescript.SourceFile): string;
       /** Scans over the sources and initializes the reflection structure. */
@@ -330,7 +332,7 @@ declare module 'assemblyscript/compiler' {
       /** Compiles a statement. */
       compileStatement(node: typescript.Statement): binaryen.Statement;
       /** Compiles an expression. */
-      compileExpression(node: typescript.Expression, contextualType: reflection.Type): binaryen.Expression;
+      compileExpression(node: typescript.Expression, contextualType: reflection.Type, convertToType?: reflection.Type, convertExplicit?: boolean): binaryen.Expression;
       /** Wraps an expression with a conversion where necessary. */
       maybeConvertValue(node: typescript.Expression, expr: binaryen.Expression, fromType: reflection.Type, toType: reflection.Type, explicit: boolean): binaryen.Expression;
       /** Resolves a TypeScript type alias to the root AssemblyScript type where applicable, by symbol. */
@@ -441,6 +443,7 @@ declare module 'assemblyscript/typescript' {
   export import DiagnosticCollection = ts.DiagnosticCollection;
   export import DiagnosticMessage = ts.DiagnosticMessage;
   export import Diagnostic = ts.Diagnostic;
+  export import Diagnostics = ts.Diagnostics;
   export import DoStatement = ts.DoStatement;
   export import ElementAccessExpression = ts.ElementAccessExpression;
   export import EnumDeclaration = ts.EnumDeclaration;
@@ -493,6 +496,7 @@ declare module 'assemblyscript/typescript' {
   export import getSourceFileOfNode = ts.getSourceFileOfNode;
   export import getTextOfNode = ts.getTextOfNode;
   export import createDiagnosticCollection = ts.createDiagnosticCollection;
+  export import createDiagnosticForNode = ts.createDiagnosticForNode;
   export import createProgram = ts.createProgram;
   export import createSourceFile = ts.createSourceFile;
   /** Default format diagnostics host for convenience. */
@@ -502,7 +506,7 @@ declare module 'assemblyscript/typescript' {
   /** Creates an AssemblyScript-compatible compiler host. */
   export function createCompilerHost(moduleSearchLocations: string[], entryFileSource?: string, entryFileName?: string): CompilerHost;
   /** Creates a diagnostic message referencing a node. */
-  export function createDiagnosticForNode(node: Node, category: DiagnosticCategory, message: string, arg1?: string): ts.Diagnostic;
+  export function createDiagnosticForNodeEx(node: Node, category: DiagnosticCategory, message: string, arg1?: string): ts.Diagnostic;
   /** Formats a diagnostic message in plain text. */
   export function formatDiagnostics(diagnostics: Diagnostic[], host?: FormatDiagnosticsHost): string;
   /** Formats a diagnostic message with terminal colors and source context. */
@@ -541,6 +545,9 @@ declare module 'assemblyscript/typescript' {
   export function getReflectedClassTemplate(node: ClassDeclaration): reflection.ClassTemplate;
   /** Sets the reflected class template (describing a class with unresolved generic types) of a class declaration. */
   export function setReflectedClassTemplate(node: ClassDeclaration, template: reflection.ClassTemplate): void;
+  export const DiagnosticsEx: {
+    Unresolvable_type: ts.DiagnosticMessage;
+  };
 }
 
 declare module 'assemblyscript/statements' {
@@ -891,7 +898,6 @@ declare module 'assemblyscript/reflection/class' {
 
 declare module 'assemblyscript/reflection/enum' {
   /** @module assemblyscript/reflection */ /** */
-  import Compiler from "assemblyscript/compiler";
   import Property from "assemblyscript/reflection/property";
   import * as typescript from "assemblyscript/typescript";
   /** A reflected enum instance. */
@@ -907,7 +913,7 @@ declare module 'assemblyscript/reflection/enum' {
       /** Constructs a new reflected enum and binds it to its TypeScript declaration. */
       constructor(name: string, declaration: typescript.EnumDeclaration);
       /** Initializes the enum and its values. */
-      initialize(compiler: Compiler): void;
+      initialize(): void;
       toString(): string;
   }
   export { Enum as default };
@@ -917,7 +923,7 @@ declare module 'assemblyscript/reflection/function' {
   /** @module assemblyscript/reflection */ /** */
   import * as binaryen from "assemblyscript/binaryen";
   import { Class, TypeArgumentsMap } from "assemblyscript/reflection/class";
-  import Compiler from "assemblyscript/compiler";
+  import { Compiler } from "assemblyscript/compiler";
   import { Type } from "assemblyscript/reflection/type";
   import { Variable, VariablesMap } from "assemblyscript/reflection/variable";
   import * as typescript from "assemblyscript/typescript";
@@ -1001,8 +1007,8 @@ declare module 'assemblyscript/reflection/function' {
       initialize(compiler: Compiler): void;
       /** Introduces an additional local variable. */
       addLocal(name: string, type: Type): Variable;
-      /** Compiles a call to this function using the specified arguments. Arguments to instance functions include `this` as the first argument. */
-      makeCall(compiler: Compiler, diagnosticsNode: typescript.Node, argumentNodes: typescript.Expression[]): binaryen.Expression;
+      /** Compiles a call to this function using the specified arguments. Arguments to instance functions include `this` as the first argument or can specifiy it in `thisArg`. */
+      makeCall(compiler: Compiler, diagnosticsNode: typescript.Node, argumentNodes: typescript.Expression[], thisArg?: binaryen.Expression): binaryen.Expression;
   }
   export { Function as default };
   /** A function template with possibly unresolved generic parameters. */
@@ -1038,12 +1044,10 @@ declare module 'assemblyscript/reflection/property' {
       type: Type;
       /** Offset in memory, if applicable. */
       offset: number;
-      /** Constant value, if applicable. */
-      constantValue?: any;
+      /** Initializer expression, if applicable. */
+      initializer: typescript.Expression | undefined;
       /** Constructs a new reflected property. */
-      constructor(name: string, declaration: typescript.PropertyDeclaration | typescript.EnumMember, type: Type, offset: number, constantValue?: any);
-      /** Tests if this property has a constant value. */
-      readonly isConstant: boolean;
+      constructor(name: string, declaration: typescript.PropertyDeclaration | typescript.EnumMember, type: Type, offset: number, initializer?: typescript.Expression);
       /** Tests if this property is an instance member / not static. */
       readonly isInstance: boolean;
       toString(): string;

@@ -10,14 +10,7 @@ export function compileAs(compiler: Compiler, node: typescript.AsExpression, con
   const toType = compiler.resolveType(node.type, false, compiler.currentFunction.typeArguments);
 
   typescript.setReflectedType(node, toType);
-
-  return compiler.maybeConvertValue(
-    node,
-    compiler.compileExpression(node.expression, contextualType),
-    typescript.getReflectedType(node.expression),
-    toType,
-    true // explicit
-  );
+  return compiler.compileExpression(node.expression, contextualType, toType, true);
 }
 
 export { compileAs as default };

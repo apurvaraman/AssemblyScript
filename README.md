@@ -5,7 +5,7 @@
 
 Try it out in your browser: [dcode.io/AssemblyScript](http://dcode.io/AssemblyScript/)
 
-[![npm](https://img.shields.io/npm/v/assemblyscript.svg)](https://www.npmjs.com/package/assemblyscript) [![Build Status](https://travis-ci.org/dcodeIO/AssemblyScript.svg?branch=master)](https://travis-ci.org/dcodeIO/AssemblyScript) [![npm](https://img.shields.io/npm/dm/assemblyscript.svg)](https://www.npmjs.com/package/assemblyscript)
+[![npm](https://img.shields.io/npm/v/assemblyscript.svg)](https://www.npmjs.com/package/assemblyscript) [![Build Status](https://travis-ci.org/dcodeIO/AssemblyScript.svg?branch=master)](https://travis-ci.org/dcodeIO/AssemblyScript) [![npm](https://img.shields.io/npm/dm/assemblyscript.svg)](https://www.npmjs.com/package/assemblyscript) <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=dcode%40dcode.io&item_name=Open%20Source%20Software%20Donation&item_number=dcodeIO%2Fprotobuf.js"><img alt="donate ❤" src="https://img.shields.io/badge/donate-❤-ff2244.svg"></a>
 
 Contents
 --------
@@ -47,12 +47,12 @@ What to expect
 --------------
 
 <details><p>
-The most prominent difference of JavaScript and any strictly typed language is that, in TypeScript/JavaScript, a variable can reference a value of any type. This implies that a JavaScript VM has to conduct additional book-keeping of a value's type in addition to its value and that it has to perform additional checks whenever a variable is accessed. Modern JavaScript VMs shortcut the overhead introduced by this and similar dynamic features by generating case-specific code based on statistical information collected just in time, effectively reducing the amount of checks to perform implicitly and thus speeding up execution significantly. Similarily, developers shortcut the overhead of remembering each variable's type by using TypeScript. The combination of both also makes a good match because it potentially aids the JIT compiler.
+The most prominent difference of JavaScript and any strictly typed language is that, in JavaScript, a variable can reference a value of any type. This implies that a JavaScript execution environment has to emit additional runtime checks whenever a variable is accessed. Modern JavaScript VMs shortcut the overhead introduced by this and similar dynamic features by generating case-specific code based on statistical information collected just in time (JIT), speeding up execution significantly. Similarily, developers shortcut the overhead of remembering each variable's type by using TypeScript. The combination of both also makes for a good match because it potentially aids the JIT compiler.
 
-Nonetheless, TypeScript isn't a *strictly* typed language after all because it allows specific constructs to resort to JavaScript's dynamic features. For example, TypeScript allows annotating function parameters as omittable (i.e. `someParameter?: number`), effectively resulting in a union type `number | undefined` at runtime, just like it also allows declaring union types explicitly. Conceptionally, these constructs are incompatible with a strict, AOT-compiled type system unless relatively expensive workarounds are introduced. Hence...
+Because it has the ability to fall back to dynamic JavaScript features, TypeScript isn't a *strictly* typed language after all. For example, TypeScript supports omittable (i.e. `someParameter?: number`) function parameters resulting in a union type `number | undefined` at runtime, just like it also allows declaring union types explicitly. These constructs are incompatible with a strict, ahead of time (AOT) compiled type system unless additional runtime checks are emitted that'd usually execute slower than similar code running in a VM that has the ability to perform optimizations at runtime. Hence...
 </p><summary><strong>TL;DR</strong></summary></details>
 
-Instead of trying to mimic TypeScript/JavaScript as closely as possible at the expense of performance (recap that: slower than similar code running in a JIT-compiling VM), AssemblyScript tries to support TypeScript features as closely as reasonable, not supporting certain JavaScript-specific dynamic constructs intentionally:
+Instead of reimplementing TypeScript *as closely as possible* at the expense of performance, AssemblyScript tries to support its features *as closely as reasonable* while not supporting certain dynamic constructs intentionally:
 
 * All types must be annotated to avoid possibly unwanted implicit type conversions
 * Optional function parameters require an initializer expression

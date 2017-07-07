@@ -61,7 +61,7 @@ export function compileFor(compiler: Compiler, node: typescript.ForStatement): b
     context.push(
       op.loop("continue$" + label,
         op.if(
-          compiler.maybeConvertValue(node.condition, compiler.compileExpression(node.condition, reflection.intType), typescript.getReflectedType(node.condition), reflection.intType, true),
+          compiler.compileExpression(node.condition, reflection.intType, reflection.intType, false),
           ifTrue.length === 1 ? ifTrue[0] : op.block("", ifTrue)
         )
       )

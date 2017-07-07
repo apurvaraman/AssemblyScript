@@ -1,8 +1,9 @@
 /** @module assemblyscript/reflection */ /** */
 
 import * as binaryen from "../binaryen";
+import { isLibrary } from "../builtins";
 import { Class, TypeArgumentsMap } from "./class";
-import Compiler from "../compiler";
+import { Compiler, CompilerMemoryModel } from "../compiler";
 import { Type, voidType } from "./type";
 import { Variable, VariableFlags, VariablesMap } from "./variable";
 import * as typescript from "../typescript";
@@ -27,7 +28,7 @@ export abstract class FunctionBase {
   /** Tests if this function is exported to the embedder. */
   get isExport(): boolean { return typescript.isExport(this.declaration); }
   /** Tests if this function is an instance member / not static. */
-  get isInstance(): boolean { return !typescript.isStatic(this.declaration) && this.declaration.kind === typescript.SyntaxKind.MethodDeclaration; }
+  get isInstance(): boolean { return this.isConstructor || !typescript.isStatic(this.declaration) && this.declaration.kind === typescript.SyntaxKind.MethodDeclaration; }
   /** Tests if this function is the constructor of a class. */
   get isConstructor(): boolean { return this.declaration.kind === typescript.SyntaxKind.Constructor; }
   /** Tests if this function is a getter. */
@@ -143,56 +144,50 @@ export class Function extends FunctionBase {
     return variable;
   }
 
-  /** Compiles a call to this function using the specified arguments. Arguments to instance functions include `this` as the first argument. */
-  makeCall(compiler: Compiler, diagnosticsNode: typescript.Node, argumentNodes: typescript.Expression[]): binaryen.Expression {
+  /** Compiles a call to this function using the specified arguments. Arguments to instance functions include `this` as the first argument or can specifiy it in `thisArg`. */
+  makeCall(compiler: Compiler, diagnosticsNode: typescript.Node, argumentNodes: typescript.Expression[], thisArg?: binaryen.Expression): binaryen.Expression {
     const op = compiler.module;
+    const operands: binaryen.Expression[] = new Array(this.parameters.length);
+    let operandIndex = 0;
 
-    if (argumentNodes.length > this.parameters.length)
-      compiler.error(argumentNodes[argumentNodes.length - 1], "Too many arguments", "Expected max. " + this.parameters.length + " but saw " + argumentNodes.length);
+    if (thisArg !== undefined)
+      operands[operandIndex++] = thisArg;
 
-    const operands: binaryen.Expression[] = [];
-    for (let i = 0; i < this.parameters.length; ++i) {
+    if (operandIndex + argumentNodes.length > this.parameters.length)
+      compiler.error(diagnosticsNode, "Too many arguments", "Expected max. " + this.parameters.length + " but saw " + argumentNodes.length);
+
+    // specified arguments
+    for (let i = 0; i < argumentNodes.length && operandIndex < this.parameters.length; ++i, ++operandIndex)
+      operands[operandIndex] = compiler.compileExpression(argumentNodes[i], this.parameters[operandIndex].type, this.parameters[operandIndex].type, false);
+
+    // omitted arguments
+    while (operandIndex < this.parameters.length) {
+      const initializer = this.parameters[operandIndex].initializer;
       let expr: binaryen.Expression;
-      if (i < argumentNodes.length) { // specified
-        expr = compiler.maybeConvertValue(
-          argumentNodes[i],
-          compiler.compileExpression(argumentNodes[i], this.parameters[i].type),
-          typescript.getReflectedType(argumentNodes[i]),
-          this.parameters[i].type,
-          false
-        );
-      } else { // omitted
-        const initializer = this.parameters[i].initializer;
-        if (initializer) {
-          // FIXME: initializers are currently compiled in the context of the calling function,
-          // preventing proper usage of 'this', for example.
-          expr = compiler.maybeConvertValue(
-            initializer,
-            compiler.compileExpression(initializer, this.parameters[i].type),
-            typescript.getReflectedType(initializer),
-            this.parameters[i].type,
-            false
-          );
-        } else {
-          compiler.error(diagnosticsNode, "Too few arguments", "Expected min. " + (i + 1) + " but saw " + argumentNodes.length);
-          expr = op.unreachable();
-        }
+      if (initializer) {
+        // FIXME: initializers are currently compiled in the context of the calling function,
+        // preventing proper usage of 'this'
+        expr = compiler.compileExpression(initializer, this.parameters[operandIndex].type, this.parameters[operandIndex].type, false);
+      } else {
+        compiler.error(diagnosticsNode, "Too few arguments", "Expected value for '" + this.parameters[operandIndex].name + "' thisArg="+thisArg+", operandIndex="+operandIndex+", length="+argumentNodes.length+"/"+this.parameters.length);
+        expr = op.unreachable();
       }
-      operands.push(expr);
+      operands[operandIndex++] = expr;
     }
 
-    // Rewire internal library calls
+    if (operandIndex !== operands.length)
+      throw Error("unexpected operand index");
+
+    // Rewire built-in malloc calls, if necessary
     let internalName = this.name;
-    switch (internalName) {
-      case "assembly.d.ts/malloc":
-      case "assembly.d.ts/free":
-      case "assembly.d.ts/memcpy":
-      case "assembly.d.ts/memset":
-      case "assembly.d.ts/memcmp":
-        internalName = this.simpleName;
-        break;
+    let isImport = this.isImport;
+    if (isImport && isLibrary(this.name, true)) {
+      internalName = this.simpleName;
+      if (compiler.memoryModel === CompilerMemoryModel.MALLOC || compiler.memoryModel === CompilerMemoryModel.EXPORT_MALLOC)
+        isImport = false;
     }
-    return op.call(internalName, operands, binaryen.typeOf(this.returnType, compiler.uintptrSize));
+
+    return (isImport ? op.callImport : op.call)(internalName, operands, binaryen.typeOf(this.returnType, compiler.uintptrSize));
   }
 }
 
@@ -269,7 +264,7 @@ export class FunctionTemplate extends FunctionBase {
         initializer: parameter.initializer
       };
       if (!parameter.type && typescript.getSourceFileOfNode(this.declaration) !== compiler.libraryFile) // library may use 'any'
-        compiler.error(parameter, "Type expected");
+        compiler.error(parameter, typescript.Diagnostics.Type_expected);
     }
     if (this.isInstance) {
       parameters.unshift({

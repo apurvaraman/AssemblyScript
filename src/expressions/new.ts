@@ -39,7 +39,7 @@ export function compileNew(compiler: Compiler, node: typescript.NewExpression, c
     instance = <reflection.Class>reference;
 
   } else {
-    compiler.error(node, "Unresolvable call target", typescript.getTextOfNode(identifierNode));
+    compiler.error(node, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(identifierNode));
     return op.unreachable();
   }
 
@@ -54,16 +54,20 @@ export function compileNew(compiler: Compiler, node: typescript.NewExpression, c
     ctor = current.ctor;
   }
 
+  const allocate = instance.implicitMalloc
+    ? compiler.compileMallocInvocation(instance.size) // implicit allocation
+    : binaryen.valueOf(compiler.uintptrType, op, 0);  // allocates on its own (this=null)
+
   // If there is no constructor defined, just allocate memory
   if (!(ctor && ctor.body))
-    return compiler.compileMallocInvocation(instance.size);
+    return allocate;
 
   // Otherwise compile the constructor if it hasn't been already
   if (!ctor.compiled && ctor.body)
     compiler.compileFunction(ctor);
 
-  // And call it
-  return ctor.makeCall(compiler, node, node.arguments || []);
+  // And call it (inserts 'this')
+  return ctor.makeCall(compiler, node, node.arguments || [], allocate);
 
 }
 

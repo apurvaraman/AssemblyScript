@@ -27,7 +27,7 @@ export function compileDo(compiler: Compiler, node: typescript.DoStatement): bin
 
   loop.push(
     op.break("continue$" + label,
-      compiler.maybeConvertValue(node.expression, compiler.compileExpression(node.expression, reflection.intType), typescript.getReflectedType(node.expression), reflection.intType, true)
+      compiler.compileExpression(node.expression, reflection.intType, reflection.intType, false)
     )
   );
 
