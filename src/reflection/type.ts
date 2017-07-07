@@ -122,11 +122,7 @@ export const ulongType = new Type(TypeKind.ulong, 8);
 /** Reflected 32-bit float type. */
 export const floatType = new Type(TypeKind.float, 4);
 /** Reflected 64-bit float type. */
-
 export const doubleType = new Type(TypeKind.double , 8);
-/** */
-export const uintptrType = new Type(TypeKind.uintptr  , 4);
-
 /** Reflected 32-bit pointer type. Relevant only when compiling for 32-bit WebAssembly. */
 export const uintptrType32 = new Type(TypeKind.uintptr, 4);
 /** Reflected 64-bit pointer type. Relevant only when compiling for 64-bit WebAssembly. */

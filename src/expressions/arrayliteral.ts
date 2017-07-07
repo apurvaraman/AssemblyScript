@@ -69,7 +69,6 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
           case(type.TypeKind.short):
           case(type.TypeKind.ushort):
           case(type.TypeKind.uint):
-          case(type.TypeKind.uintptr):
           case(type.TypeKind.int):
           case(type.TypeKind.sbyte):
           case(type.TypeKind.sbyte):
