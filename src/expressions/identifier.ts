@@ -1,32 +1,33 @@
 /** @module assemblyscript/expressions */ /** */
 
-import * as binaryen from "../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
+import * as util from "../util";
 
 /** Compiles an identifier expression. */
 export function compileIdentifier(compiler: Compiler, node: typescript.Identifier, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
+
+  util.setReflectedType(node, contextualType);
 
   const reference = compiler.resolveReference(node);
   if (reference) {
 
     if (reference instanceof reflection.Variable) {
       const variable = <reflection.Variable>reference;
-      typescript.setReflectedType(node, variable.type);
+      util.setReflectedType(node, variable.type);
 
       if (variable.isConstant && variable.value != null) // inline
-        return binaryen.valueOf(variable.type, op, variable.value);
+        return compiler.valueOf(variable.type, variable.value);
 
       return variable.isGlobal
-        ? op.getGlobal(variable.name, binaryen.typeOf(variable.type, compiler.uintptrSize))
-        : op.getLocal(variable.index, binaryen.typeOf(variable.type, compiler.uintptrSize));
+        ? op.getGlobal(variable.name, compiler.typeOf(variable.type))
+        : op.getLocal(variable.index, compiler.typeOf(variable.type));
     }
-
   }
-  compiler.error(node, typescript.Diagnostics.Cannot_find_name_0, node.text);
-  typescript.setReflectedType(node, contextualType);
+  compiler.report(node, typescript.DiagnosticsEx.Unresolvable_identifier_0, typescript.getTextOfNode(node));
   return op.unreachable();
 }
 

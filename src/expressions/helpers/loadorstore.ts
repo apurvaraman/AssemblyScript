@@ -1,6 +1,6 @@
 /** @module assemblyscript/expressions */ /** */
 
-import * as binaryen from "../../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../../compiler";
 import * as reflection from "../../reflection";
 import * as typescript from "../../typescript";
@@ -21,7 +21,7 @@ export function compileLoadOrStore(compiler: Compiler, node: typescript.Expressi
 
   // store expression
   const op = compiler.module;
-  const binaryenType = binaryen.typeOf(type, compiler.uintptrSize);
+  const binaryenType = compiler.typeOf(type);
 
   // TODO: this uses a temporary local because the 'ptr' expression might exhibit side-effects,
   // i.e. if it includes a postfix unary expression or similar. but: if 'ptr' is just a get_local,

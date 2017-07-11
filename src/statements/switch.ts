@@ -1,9 +1,10 @@
 /** @module assemblyscript/statements */ /** */
 
-import * as binaryen from "../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
+import * as util from "../util";
 
 /*
 block {
@@ -59,7 +60,7 @@ export function compileSwitch(compiler: Compiler, node: typescript.SwitchStateme
           label:  "case" + i + "$" + label,
           index: i,
           statements: statements,
-          expression: compiler.maybeConvertValue(clause.expression, compiler.compileExpression(clause.expression, reflection.intType), typescript.getReflectedType(clause.expression), reflection.intType, true)
+          expression: compiler.maybeConvertValue(clause.expression, compiler.compileExpression(clause.expression, reflection.intType), util.getReflectedType(clause.expression), reflection.intType, true)
         };
         labels.push(cases[i].label);
       }
@@ -70,7 +71,7 @@ export function compileSwitch(compiler: Compiler, node: typescript.SwitchStateme
     let condition = op.i32.const(-1);
     for (let i = cases.length - 1; i >= 0; --i)
       if (cases[i] !== defaultCase)
-        condition = op.select(op.i32.eq(op.getLocal(conditionLocal.index, binaryen.typeOf(reflection.intType, compiler.uintptrSize)), <binaryen.I32Expression>cases[i].expression), op.i32.const(i), condition);
+        condition = op.select(op.i32.eq(op.getLocal(conditionLocal.index, compiler.typeOf(reflection.intType)), <binaryen.I32Expression>cases[i].expression), op.i32.const(i), condition);
 
     // create the innermost br_table block using the first case's label
     let currentBlock = op.block(cases[0].label, [
@@ -92,7 +93,7 @@ export function compileSwitch(compiler: Compiler, node: typescript.SwitchStateme
   } else { // just emit the condition for the case that it includes compound assignments (-O eliminates this otherwise)
 
     const voidCondition = compiler.compileExpression(node.expression, reflection.voidType);
-    if (typescript.getReflectedType(node.expression) === reflection.voidType)
+    if (util.getReflectedType(node.expression) === reflection.voidType)
       return voidCondition;
     else
       return op.drop(voidCondition);

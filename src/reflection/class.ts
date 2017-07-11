@@ -3,8 +3,9 @@
 import Compiler from "../compiler";
 import { FunctionTemplate, Function } from "./function";
 import Property from "./property";
-import Type from "./type";
+import { Type, voidType } from "./type";
 import * as typescript from "../typescript";
+import * as util from "../util";
 
 /** Common base class of {@link Class} and {@link ClassTemplate}. */
 export abstract class ClassBase {
@@ -109,7 +110,7 @@ export class Class extends ClassBase {
     this.typeArguments = typeArguments;
     this.base = base;
 
-    typescript.setReflectedClass(template.declaration, this);
+    util.setReflectedClass(template.declaration, this);
 
     if (isBuiltinArray(this.name) || (!!this.base && this.base.isArray))
       this.isArray = true;
@@ -165,14 +166,13 @@ export class Class extends ClassBase {
             const propertyType = compiler.resolveType(propertyDeclaration.type);
             if (propertyType) {
               this.properties[propertyName] = new Property(propertyName, propertyDeclaration, propertyType, this.size, propertyDeclaration.initializer);
-              if (typescript.isStatic(propertyDeclaration))
+              if (util.isStatic(propertyDeclaration))
                 compiler.addGlobal(this.name + "." + propertyName, propertyType, true, propertyDeclaration.initializer);
               else
                 this.size += propertyType.size;
-            } else
-              compiler.error(propertyDeclaration.type, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(propertyDeclaration.type));
+            } // otherwise reported by resolveType
           } else
-            compiler.error(propertyDeclaration.name, typescript.Diagnostics.Type_expected);
+            compiler.report(propertyDeclaration.name, typescript.DiagnosticsEx.Type_expected);
           break;
         }
 
@@ -190,16 +190,13 @@ export class Class extends ClassBase {
                   this.properties[name] = new Property(name, <typescript.PropertyDeclaration>member, type, this.size);
                   localInitializers.push(j);
                   this.size += type.size;
-                } else {
-                  compiler.error(parameterNode.type, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(parameterNode.type));
-                }
-              } else {
-                compiler.error(parameterNode, typescript.Diagnostics.Type_expected);
-              }
+                } // otherwise reported by resolveType
+              } else
+                compiler.report(parameterNode, typescript.DiagnosticsEx.Type_expected);
             }
           }
           compiler.initializeFunction(constructorNode);
-          this.ctor = typescript.getReflectedFunction(constructorNode);
+          this.ctor = util.getReflectedFunction(constructorNode);
           for (let j = 0, l = localInitializers.length; j < l; ++j)
             this.ctor.parameters[localInitializers[j]].isAlsoProperty = true;
           break;
@@ -208,11 +205,11 @@ export class Class extends ClassBase {
         case typescript.SyntaxKind.MethodDeclaration:
         case typescript.SyntaxKind.GetAccessor:
         case typescript.SyntaxKind.SetAccessor:
-          this.initializeMethod(compiler, <typescript.MethodDeclaration>member);
+          this.initializeMethod(compiler, <typescript.MethodDeclaration>member); // FIXME: get/set are two distinct methods
           break;
 
         default:
-          compiler.error(member, "Unsupported class member", "SyntaxKind " + member.kind);
+          compiler.report(member, typescript.DiagnosticsEx.Unsupported_node_kind_0_in_1, member.kind, "reflection.Class#initialize");
       }
     }
   }
@@ -246,10 +243,12 @@ export class ClassTemplate extends ClassBase {
   constructor(name: string, declaration: typescript.ClassDeclaration, base?: ClassTemplate, baseTypeArguments?: typescript.TypeNode[]) {
     super(name, declaration);
     if (base && !baseTypeArguments)
-      throw Error("missing base type arguments");
+      throw Error("missing base type arguments"); // handled by typescript
+
     this.base = base;
     this.baseTypeArguments = baseTypeArguments || [];
-    typescript.setReflectedClassTemplate(declaration, this);
+
+    util.setReflectedClassTemplate(declaration, this);
   }
 
   /** Tests if this class requires type arguments. */
@@ -267,7 +266,7 @@ export class ClassTemplate extends ClassBase {
       const typeNames: string[] = new Array(typeParametersCount);
       for (let i = 0; i < typeParametersCount; ++i) {
         const parameter = (<typescript.NodeArray<typescript.TypeParameterDeclaration>>this.declaration.typeParameters)[i];
-        const parameterType = compiler.resolveType(typeArgumentNodes[i], false, typeArgumentsMap);
+        const parameterType = compiler.resolveType(typeArgumentNodes[i], false, typeArgumentsMap) || voidType; // reports
         const parameterName = typescript.getTextOfNode(<typescript.Identifier>parameter.name);
         typeArguments[parameterName] = {
           type: parameterType,
@@ -283,7 +282,7 @@ export class ClassTemplate extends ClassBase {
     if (this.instances[name])
       return this.instances[name];
 
-    // Resolve base type arguments against current type arguments
+    // resolve base type arguments against current type arguments
     let base: Class | undefined;
     if (this.base) {
       const baseTypeArgumentNodes: typescript.TypeNode[] = [];
@@ -312,24 +311,24 @@ export function patchClassImplementation(compiler: Compiler, declTemplate: Class
     }
   }
 
-  // Patch existing instances.
+  // patch existing instances
   for (let keys = Object.keys(declTemplate.instances), i = 0, k = keys.length; i < k; ++i) {
     const declInstance = declTemplate.instances[keys[i]];
-    const implInstance = implTemplate.resolve(compiler, Object.keys(declInstance.typeArguments).map(key => declInstance.typeArguments[key].node ));
+    const implInstance = implTemplate.resolve(compiler, Object.keys(declInstance.typeArguments).map(key => declInstance.typeArguments[key].node));
 
     implInstance.initialize(compiler);
 
     implInstance.base = declInstance.base;
     declInstance.base = implInstance;
 
-    // Replace already initialized class instance methods with their actual implementations
+    // replace already initialized class instance methods with their actual implementations
     for (let mkeys = Object.keys(declInstance.methods), j = 0, l = mkeys.length; j < l; ++j) {
       const declMethod = declInstance.methods[mkeys[j]];
       const implMethod = implInstance.methods[mkeys[j]];
       if (implMethod) {
-        typescript.setReflectedFunctionTemplate(declMethod.template.declaration, implMethod.template);
+        util.setReflectedFunctionTemplate(declMethod.template.declaration, implMethod.template);
         if (implMethod.instance)
-          typescript.setReflectedFunction(declMethod.template.declaration, implMethod.instance);
+          util.setReflectedFunction(declMethod.template.declaration, implMethod.instance);
       }
     }
   }

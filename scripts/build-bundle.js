@@ -48,7 +48,7 @@ browserify({
 .pipe( sourcemaps.init({ loadMaps: true }) ) // TODO: For some reason, this does not load tsc's source maps
 .pipe( uglify() )
 .pipe( header(banner) )
-.pipe( sourcemaps.write() )
+.pipe( sourcemaps.write("./") )
 .pipe( vfs.dest(__dirname + "/../dist") )
 .on("end", function() {
 

@@ -1,10 +1,11 @@
 /** @module assemblyscript/statements */ /** */
 
-import * as binaryen from "../binaryen";
+import * as binaryen from "binaryen";
 import { Compiler } from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 import * as array from "../expressions/arrayliteral";
+import * as util from "../util";
 
 /** Compiles a variable declaration statement. */
 export function compileVariable(compiler: Compiler, node: typescript.VariableStatement): binaryen.Statement {
@@ -27,16 +28,16 @@ export function compileVariableDeclarationList(compiler: Compiler, node: typescr
       const declarationTypeName = typescript.getTextOfNode(declaration.type);
       lastType = declarationType = compiler.currentFunction && compiler.currentFunction.typeArguments[declarationTypeName] && compiler.currentFunction.typeArguments[declarationTypeName].type || compiler.resolveType(declaration.type);
     } else if (lastType) {
-      compiler.warn(declaration, typescript.Diagnostics.Type_expected, "Assuming '" + lastType + "' (same type as previous declaration)");
+      compiler.report(declaration.name, typescript.DiagnosticsEx.Assuming_variable_type_0, lastType.toString());
       declarationType = lastType;
     } else {
-      compiler.error(declaration, typescript.Diagnostics.Type_expected);
+      compiler.report(declaration.name, typescript.DiagnosticsEx.Type_expected);
       continue;
     }
     const local = compiler.currentFunction.addLocal(declarationName, declarationType);
     const initializer = declaration.initializer;
     if (initializer) {
-      initializers.push(op.setLocal(local.index, compiler.maybeConvertValue(initializer, compiler.compileExpression(initializer, declarationType), typescript.getReflectedType(initializer), declarationType, false)));
+      initializers.push(op.setLocal(local.index, compiler.maybeConvertValue(initializer, compiler.compileExpression(initializer, declarationType), util.getReflectedType(initializer), declarationType, false)));
       if (initializer.kind === typescript.SyntaxKind.ArrayLiteralExpression) {
         array.initializeElementsOfArray(compiler, <typescript.ArrayLiteralExpression>initializer, declarationType, declarationName, initializers);
       }

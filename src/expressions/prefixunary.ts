@@ -1,23 +1,24 @@
 /** @module assemblyscript/expressions */ /** */
 
-import * as binaryen from "../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../compiler";
 import compileLiteral from "./literal";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
+import * as util from "../util";
 
 /** Compiles a unary prefix expression. */
 export function compilePrefixUnary(compiler: Compiler, node: typescript.PrefixUnaryExpression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
   const operand = compiler.compileExpression(node.operand, contextualType);
-  const operandType = typescript.getReflectedType(node.operand);
+  const operandType = util.getReflectedType(node.operand);
 
   switch (node.operator) {
 
     case typescript.SyntaxKind.ExclamationToken:
     {
-      typescript.setReflectedType(node, reflection.boolType);
+      util.setReflectedType(node, reflection.boolType);
 
       if (operandType === reflection.floatType)
         return op.f32.eq(operand, op.f32.const(0));
@@ -34,13 +35,13 @@ export function compilePrefixUnary(compiler: Compiler, node: typescript.PrefixUn
 
     case typescript.SyntaxKind.PlusToken: // noop
     {
-      typescript.setReflectedType(node, operandType);
+      util.setReflectedType(node, operandType);
       return operand;
     }
 
     case typescript.SyntaxKind.MinusToken:
     {
-      typescript.setReflectedType(node, operandType);
+      util.setReflectedType(node, operandType);
 
       if (node.operand.kind === typescript.SyntaxKind.NumericLiteral)
         return compileLiteral(compiler, <typescript.LiteralExpression>node.operand, operandType, true);
@@ -62,22 +63,22 @@ export function compilePrefixUnary(compiler: Compiler, node: typescript.PrefixUn
     {
       if (operandType.isLong) {
 
-        typescript.setReflectedType(node, operandType);
+        util.setReflectedType(node, operandType);
         return op.i64.xor(operand, op.i64.const(-1, -1));
 
       } else if (operandType.isInt) {
 
-        typescript.setReflectedType(node, operandType);
+        util.setReflectedType(node, operandType);
         return op.i32.xor(operand, op.i32.const(-1));
 
       } else if (contextualType.isLong) { // TODO: is the following correct / doesn't generate useless ops?
 
-        typescript.setReflectedType(node, contextualType);
+        util.setReflectedType(node, contextualType);
         return op.i64.xor(compiler.maybeConvertValue(node.operand, operand, operandType, contextualType, true), op.i64.const(-1, -1));
 
       } else {
 
-        typescript.setReflectedType(node, reflection.intType);
+        util.setReflectedType(node, reflection.intType);
         return op.i32.xor(compiler.maybeConvertValue(node.operand, operand, operandType, reflection.intType, true), op.i32.const(-1));
 
       }
@@ -91,22 +92,22 @@ export function compilePrefixUnary(compiler: Compiler, node: typescript.PrefixUn
         const local = compiler.currentFunction.localsByName[(<typescript.Identifier>node.operand).text];
         if (local) {
 
-          const cat = binaryen.categoryOf(local.type, op, compiler.uintptrSize);
+          const cat = compiler.categoryOf(local.type);
           const isIncrement = node.operator === typescript.SyntaxKind.PlusPlusToken;
 
           const calculate = (isIncrement ? cat.add : cat.sub).call(cat,
             op.getLocal(
               local.index,
-              binaryen.typeOf(local.type, compiler.uintptrSize)
+              compiler.typeOf(local.type)
             ),
-            binaryen.valueOf(local.type, compiler.module, 1)
+            compiler.valueOf(local.type, 1)
           );
 
           if (contextualType === reflection.voidType) {
-            typescript.setReflectedType(node, reflection.voidType);
+            util.setReflectedType(node, reflection.voidType);
             return op.setLocal(local.index, calculate);
           } else {
-            typescript.setReflectedType(node, local.type);
+            util.setReflectedType(node, local.type);
             return op.teeLocal(local.index, calculate);
           }
         }
@@ -114,7 +115,7 @@ export function compilePrefixUnary(compiler: Compiler, node: typescript.PrefixUn
     }
   }
 
-  compiler.error(node, "Unsupported unary prefix operator");
+  compiler.report(node, typescript.DiagnosticsEx.Unsupported_node_kind_0_in_1, node.operator, "expressions.compilePrefixUnary");
   return op.unreachable();
 }
 

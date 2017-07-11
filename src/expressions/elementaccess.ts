@@ -1,18 +1,18 @@
 /** @module assemblyscript/expressions */ /** */
 
-import * as binaryen from "../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../compiler";
 import compileLoadOrStore from "./helpers/loadorstore";
 import * as Long from "long";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
+import * as util from "../util";
 
 /** Compiles an element access expression. Sets the element's value to `valueNode` if specified, otherwise gets it. */
 export function compileElementAccess(compiler: Compiler, node: typescript.ElementAccessExpression, contextualType: reflection.Type, valueNode?: typescript.Expression): binaryen.Expression {
-  const op = compiler.module;
 
   // fall back to contextual type on error
-  typescript.setReflectedType(node, contextualType);
+  util.setReflectedType(node, contextualType);
 
   // compile the index argument
   const argumentNode = <typescript.Expression>node.argumentExpression;
@@ -20,18 +20,16 @@ export function compileElementAccess(compiler: Compiler, node: typescript.Elemen
 
   // compile the expression and verify that it references an array
   const expression = compiler.compileExpression(node.expression, compiler.uintptrType);
-  const expressionType = typescript.getReflectedType(node.expression);
+  const expressionType = util.getReflectedType(node.expression);
 
-  if (!(expressionType && expressionType.underlyingClass && expressionType.underlyingClass.isArray)) {
-    compiler.error(node, "Array access used on non-array object");
-    return op.unreachable();
-  }
+  if (!(expressionType && expressionType.underlyingClass && expressionType.underlyingClass.isArray))
+    throw Error("array access used on non-array object"); // handled by typescript
 
   // obtain the reflected element type
   const arrayClass = expressionType.underlyingClass;
   const elementType = arrayClass.typeArguments.T.type;
-  const uintptrCategory = <binaryen.I32Operations | binaryen.I64Operations>binaryen.categoryOf(compiler.uintptrType, op, compiler.uintptrSize);
-  typescript.setReflectedType(node, elementType);
+  const uintptrCategory = <binaryen.I32Operations | binaryen.I64Operations>compiler.categoryOf(compiler.uintptrType);
+  util.setReflectedType(node, elementType);
 
   // if this is a store instead of a load, compile the value expression
   let valueExpression: binaryen.Expression | undefined;
@@ -51,7 +49,7 @@ export function compileElementAccess(compiler: Compiler, node: typescript.Elemen
       return compileLoadOrStore(compiler, node, elementType,
         uintptrCategory.add(
           expression,
-          binaryen.valueOf(compiler.uintptrType, op, value.mul(elementType.size))
+          compiler.valueOf(compiler.uintptrType, value.mul(elementType.size))
         ), arrayClass.size, valueExpression, contextualType
       );
     }
@@ -63,7 +61,7 @@ export function compileElementAccess(compiler: Compiler, node: typescript.Elemen
       expression,
       uintptrCategory.mul(
         argument,
-        binaryen.valueOf(compiler.uintptrType, op, elementType.size)
+        compiler.valueOf(compiler.uintptrType, elementType.size)
       )
     ), arrayClass.size, valueExpression, contextualType
   );

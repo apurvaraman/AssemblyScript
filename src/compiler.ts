@@ -1,19 +1,21 @@
 /** @module assemblyscript */ /** */
 
 import * as base64 from "@protobufjs/base64";
-import * as binaryen from "./binaryen";
+import * as binaryen from "binaryen";
 import * as builtins from "./builtins";
 import * as expressions from "./expressions";
 import compileStore from "./expressions/helpers/store";
 import * as library from "./library";
+import * as Long from "long";
 import Profiler from "./profiler";
 import * as reflection from "./reflection";
 import * as statements from "./statements";
 import * as typescript from "./typescript";
-import * as array from "./expressions/arrayliteral";
 
+import * as array from "./expressions/arrayliteral";
+import * as util from "./util";
 // Malloc, free, etc. is present as a base64 encoded blob and prepared once when required.
-let mallocWasm: Uint8Array;
+// let mallocWasm: Uint8Array;
 
 /** Compiler options. */
 export interface CompilerOptions {
@@ -56,6 +58,9 @@ export interface CompilerMemorySegment {
   buffer: Uint8Array;
 }
 
+// Malloc, free, etc. is present as a base64 encoded blob and prepared once when required.
+let libraryCache: Uint8Array;
+
 /**
  * The AssemblyScript compiler.
  *
@@ -64,7 +69,7 @@ export interface CompilerMemorySegment {
  */
 export class Compiler {
 
-  /** Diagnostic messages produced by the last invocation of {@link Compiler.compileFile} or {@link Compiler.compileString}. */
+  /** Diagnostic messages reported by the last invocation of {@link Compiler.compileFile} or {@link Compiler.compileString}. */
   static lastDiagnostics: typescript.Diagnostic[];
 
   options: CompilerOptions;
@@ -149,7 +154,7 @@ export class Compiler {
 
     Compiler.lastDiagnostics = [];
 
-    // bail out if there were 'pre emit' errors
+    // bail out if TypeScript reported 'pre emit' errors
     let diagnostics = typescript.getPreEmitDiagnostics(compiler.program);
     for (let i = 0, k = diagnostics.length; i < k; ++i) {
       if (!silent)
@@ -166,7 +171,7 @@ export class Compiler {
     if (!silent)
       (console.error || console.log)("initialization took " + compiler.profiler.end("initialize").toFixed(3) + " ms");
 
-    // bail out if there were initialization errors
+    // bail out if AssemblyScript reported initialization errors
     diagnostics = compiler.diagnostics.getDiagnostics();
     for (let i = 0, k = diagnostics.length; i < k; ++i) {
       Compiler.lastDiagnostics.push(diagnostics[i]);
@@ -183,7 +188,7 @@ export class Compiler {
     if (!silent)
       (console.error || console.log)("compilation took " + compiler.profiler.end("compile").toFixed(3) + " ms\n");
 
-    // bail out if there were compilation errors
+    // bail out if AssemblyScript reported compilation errors
     diagnostics = compiler.diagnostics.getDiagnostics();
     for (let i = 0, k = diagnostics.length; i < k; ++i) {
       Compiler.lastDiagnostics.push(diagnostics[i]);
@@ -238,9 +243,9 @@ export class Compiler {
       this.memoryModel === CompilerMemoryModel.MALLOC ||
       this.memoryModel === CompilerMemoryModel.EXPORT_MALLOC
     ) {
-      if (!mallocWasm)
-        base64.decode(library.malloc, mallocWasm = new Uint8Array(base64.length(library.malloc)), 0);
-      this.module = binaryen.readBinary(mallocWasm);
+      if (!libraryCache)
+        base64.decode(library.malloc, libraryCache = new Uint8Array(base64.length(library.malloc)), 0);
+      this.module = binaryen.readBinary(libraryCache);
     } else
       this.module = new binaryen.Module();
 
@@ -260,31 +265,9 @@ export class Compiler {
     }
   }
 
-  /** Adds an informative diagnostic to {@link Compiler#diagnostics} and prints it. */
-  info(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void {
-    const diagnostic = typeof message === "string"
-      ? typescript.createDiagnosticForNodeEx(node, typescript.DiagnosticCategory.Message, message, arg1)
-      : typescript.createDiagnosticForNode(node, message, arg1);
-    this.diagnostics.add(diagnostic);
-    if (!(this.options && this.options.silent))
-      typescript.printDiagnostic(diagnostic);
-  }
-
-  /** Adds a warning diagnostic to {@link Compiler#diagnostics} and prints it. */
-  warn(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void {
-    const diagnostic = typeof message === "string"
-      ? typescript.createDiagnosticForNodeEx(node, typescript.DiagnosticCategory.Warning, message, arg1)
-      : typescript.createDiagnosticForNode(node, message, arg1);
-    this.diagnostics.add(diagnostic);
-    if (!(this.options && this.options.silent))
-      typescript.printDiagnostic(diagnostic);
-  }
-
-  /** Adds an error diagnostic to {@link Compiler#diagnostics} and prints it. */
-  error(node: typescript.Node, message: string | typescript.DiagnosticMessage, arg1?: string): void {
-    const diagnostic = typeof message === "string"
-      ? typescript.createDiagnosticForNodeEx(node, typescript.DiagnosticCategory.Error, message, arg1)
-      : typescript.createDiagnosticForNode(node, message, arg1);
+  /** Reports a diagnostic message (adds it to {@link Compiler#diagnostics}) and prints it. */
+  report(node: typescript.Node, message: typescript.DiagnosticMessage, arg0?: string | number, arg1?: string | number, arg2?: string | number) {
+    const diagnostic = typescript.createDiagnosticForNode(node, message, arg0, arg1, arg2);
     this.diagnostics.add(diagnostic);
     if (!(this.options && this.options.silent))
       typescript.printDiagnostic(diagnostic);
@@ -335,7 +318,7 @@ export class Compiler {
             break;
 
           default:
-            this.error(statement, "Unsupported top-level statement"/*, typescript.SyntaxKind[statement.kind]*/);
+            this.report(statement, typescript.DiagnosticsEx.Unsupported_node_kind_0_in_1, statement.kind, "Compiler#initialize");
             break;
         }
       }
@@ -346,30 +329,30 @@ export class Compiler {
       this.memoryModel === CompilerMemoryModel.EXPORT_MALLOC ||
       this.memoryModel === CompilerMemoryModel.IMPORT_MALLOC
     ) {
-      this.initializeMalloc();
+      this.initializeLibrary();
     }
   }
 
   /** Gets an existing signature if it exists and otherwise creates it. */
   getOrAddSignature(argumentTypes: reflection.Type[], returnType: reflection.Type): binaryen.Signature {
     const identifiers: string[] = [];
-    argumentTypes.forEach(type => identifiers.push(binaryen.identifierOf(type, this.uintptrSize)));
-    identifiers.push(binaryen.identifierOf(returnType, this.uintptrSize));
+    argumentTypes.forEach(type => identifiers.push(this.identifierOf(type)));
+    identifiers.push(this.identifierOf(returnType));
     const identifier = identifiers.join("");
     let signature = this.signatures[identifier];
     if (!signature) {
-      const binaryenArgumentTypes: binaryen.Type[] = argumentTypes.map(type => binaryen.typeOf(type, this.uintptrSize));
-      const binaryenReturnType = binaryen.typeOf(returnType, this.uintptrSize);
+      const binaryenArgumentTypes: binaryen.Type[] = argumentTypes.map(type => this.typeOf(type));
+      const binaryenReturnType = this.typeOf(returnType);
       signature = this.signatures[identifier] = this.module.getFunctionTypeBySignature(binaryenReturnType, binaryenArgumentTypes)
                                              || this.module.addFunctionType(identifier, binaryenReturnType, binaryenArgumentTypes);
     }
     return signature;
   }
 
-  /** Initializes the statically linked or imported malloc implementation. */
-  initializeMalloc(): void {
+  /** Initializes the statically linked or imported library implementation. */
+  initializeLibrary(): void {
     const op = this.module;
-    const binaryenPtrType = binaryen.typeOf(this.uintptrType, this.uintptrSize);
+    const binaryenPtrType = this.typeOf(this.uintptrType);
 
     // these are required in any case
     const mallocSignature = this.getOrAddSignature([this.uintptrType], this.uintptrType); // void *malloc(size_t)
@@ -392,10 +375,10 @@ export class Compiler {
     } else {
 
       // initialize mspace'd malloc on start and remember the mspace within `.msp`:
-      op.addGlobal(".msp", binaryenPtrType, true, binaryen.valueOf(this.uintptrType, op, 0));
+      op.addGlobal(".msp", binaryenPtrType, true, this.valueOf(this.uintptrType, 0));
       this.globalInitializers.unshift( // must be initialized before other global initializers use 'new'
         op.setGlobal(".msp", op.call("mspace_init", [
-          binaryen.valueOf(this.uintptrType, op, this.uintptrSize) // Leave space for null
+          this.valueOf(this.uintptrType, this.uintptrSize) // Leave space for null
         ], binaryenPtrType))
       );
 
@@ -434,17 +417,20 @@ export class Compiler {
       const declaration = node.declarationList.declarations[i];
       const initializerNode = declaration.initializer;
 
-      if (declaration.type && declaration.symbol) {
+      if (declaration.type) {
+
+        if (!declaration.symbol)
+          throw Error("symbol expected");
+
         const name = this.mangleGlobalName(declaration.symbol.name, typescript.getSourceFileOfNode(declaration));
         const type = this.resolveType(declaration.type);
 
         if (type)
-          this.addGlobal(name, type, !typescript.isConst(node.declarationList), initializerNode);
-        else
-          this.error(declaration.type, typescript.Diagnostics.Cannot_find_name_0, typescript.getTextOfNode(declaration.type));
+          this.addGlobal(name, type, !util.isConst(node.declarationList), initializerNode);
+        // otherwise reported by resolveType
 
       } else
-        this.error(declaration.name, typescript.Diagnostics.Type_expected);
+        this.report(declaration.name, typescript.DiagnosticsEx.Type_expected);
     }
   }
 
@@ -460,10 +446,10 @@ export class Compiler {
     if (initializerNode) {
 
       if (initializerNode.kind === typescript.SyntaxKind.NumericLiteral) {
-        op.addGlobal(name, binaryen.typeOf(type, this.uintptrSize), mutable, expressions.compileLiteral(this, <typescript.LiteralExpression>initializerNode, type));
+        op.addGlobal(name, this.typeOf(type), mutable, expressions.compileLiteral(this, <typescript.LiteralExpression>initializerNode, type));
 
       } else if (mutable) {
-        op.addGlobal(name, binaryen.typeOf(type, this.uintptrSize), mutable, binaryen.valueOf(type, op, 0));
+        op.addGlobal(name, this.typeOf(type), mutable, this.valueOf(type, 0));
 
         if (!this.startFunction)
           (this.startFunction = createStartFunction()).initialize(this);
@@ -490,7 +476,7 @@ export class Compiler {
 
         this.currentFunction = previousFunction;
       } else
-        this.error(initializerNode, "Unsupported global constant initializer");
+        this.report(initializerNode, typescript.DiagnosticsEx.Unsupported_node_kind_0_in_1, initializerNode.kind, "Compiler#addGlobal");
 
     } else {
       let value: number = 0;
@@ -506,7 +492,7 @@ export class Compiler {
       }
       if (global.isConstant) // enable inlining so these globals can be eliminated by the optimizer
         global.value = value;
-      op.addGlobal(name, binaryen.typeOf(type, this.uintptrSize), mutable, binaryen.valueOf(type, op, value));
+      op.addGlobal(name, this.typeOf(type), mutable, this.valueOf(type, value));
     }
   }
 
@@ -554,12 +540,12 @@ export class Compiler {
     if (node.kind === typescript.SyntaxKind.FunctionDeclaration) {
       name = this.mangleGlobalName(typescript.getTextOfNode(<typescript.Identifier>node.name), typescript.getSourceFileOfNode(node));
     } else {
-      const parent = typescript.getReflectedClass(<typescript.ClassDeclaration>node.parent);
+      const parent = util.getReflectedClass(<typescript.ClassDeclaration>node.parent);
       if (!parent)
         throw Error("missing parent");
       if (node.kind === typescript.SyntaxKind.Constructor)
         name = parent.name;
-      else if (typescript.isStatic(node))
+      else if (util.isStatic(node))
         name = parent.name + "." + typescript.getTextOfNode(<typescript.Identifier>node.name);
       else
         name = parent.name + "#" + typescript.getTextOfNode(<typescript.Identifier>node.name);
@@ -570,8 +556,10 @@ export class Compiler {
     if (!template) { // not already initialized
       template = this.functionTemplates[name] = new reflection.FunctionTemplate(name, node);
       if (template.isGeneric) {
-        if (builtins.isBuiltin(name, false)) // generic builtins evaluate type parameters dynamically and have a known return type
-          typescript.setReflectedFunction(node, new reflection.Function(name, template, {}, [], this.resolveType(<typescript.TypeNode>template.declaration.type, true)));
+        if (builtins.isBuiltin(name, false)) { // generic builtins evaluate type parameters dynamically and have a known return type
+          const returnType = this.resolveType(<typescript.TypeNode>template.declaration.type, true); // reports issues
+          util.setReflectedFunction(node, new reflection.Function(name, template, {}, [], returnType || reflection.voidType));
+        }
       } else {
         instance = this.functions[name] = template.resolve(this, []);
         instance.initialize(this);
@@ -590,8 +578,8 @@ export class Compiler {
 
     const sourceFile = typescript.getSourceFileOfNode(node);
 
-    if (sourceFile === this.entryFile && typescript.isExport(node))
-      this.warn(<typescript.Identifier>node.name, "Exporting entire classes is not supported yet");
+    if (sourceFile === this.entryFile && util.isExport(node))
+      this.report(<typescript.Identifier>node.name, typescript.DiagnosticsEx.Unsupported_modifier_0, "export");
 
     let base: reflection.ClassTemplate | undefined;
     let baseTypeArguments: typescript.TypeNode[] | undefined;
@@ -606,13 +594,13 @@ export class Compiler {
               base = reference;
               baseTypeArguments = extendsNode.typeArguments || [];
             } else
-              this.error(clause, "No such base class");
+              this.report(extendsNode.expression, typescript.DiagnosticsEx.Unresolvable_type_0, typescript.getTextOfNode(extendsNode.expression));
           } else
-            this.error(clause, "Unsupported extension");
+            this.report(extendsNode.expression, typescript.DiagnosticsEx.Unsupported_node_kind_0_in_1, extendsNode.expression.kind, "Compiler#initializeClass/1");
         } else if (clause.token === typescript.SyntaxKind.ImplementsKeyword) {
           // TODO
         } else
-          this.error(clause, "Unsupported extension");
+          this.report(clause, typescript.DiagnosticsEx.Unsupported_node_kind_0_in_1, clause.token, "Compiler#initializeClass/2");
       }
     }
 
@@ -640,8 +628,8 @@ export class Compiler {
     if (this.enums[name])
       return; // already initialized
 
-    if (typescript.getSourceFileOfNode(node) === this.entryFile && typescript.isExport(node))
-      this.warn(node.name, "Exporting enums is not supported yet");
+    if (typescript.getSourceFileOfNode(node) === this.entryFile && util.isExport(node))
+      this.report(node.name, typescript.DiagnosticsEx.Unsupported_modifier_0, "export");
 
     const instance = this.enums[name] = new reflection.Enum(name, node);
     instance.initialize(/* this */);
@@ -663,8 +651,8 @@ export class Compiler {
           case typescript.SyntaxKind.FunctionDeclaration:
           {
             const declaration = <typescript.FunctionDeclaration>statement;
-            if (typescript.isExport(declaration) || typescript.isStartFunction(declaration) || this.options.treeShaking === false) {
-              const instance = typescript.getReflectedFunction(declaration);
+            if (util.isExport(declaration) || util.isStartFunction(declaration) || this.options.treeShaking === false) {
+              const instance = util.getReflectedFunction(declaration);
               if (instance) // otherwise generic: compiled once type arguments are known
                 this.compileFunction(instance);
             }
@@ -674,7 +662,7 @@ export class Compiler {
           case typescript.SyntaxKind.ClassDeclaration:
           {
             const declaration = <typescript.ClassDeclaration>statement;
-            const instance = typescript.getReflectedClass(declaration);
+            const instance = util.getReflectedClass(declaration);
             if (instance) // otherwise generic: compiled once type arguments are known
               this.compileClass(instance);
             break;
@@ -689,7 +677,7 @@ export class Compiler {
     const binaryenSegments: binaryen.MemorySegment[] = [];
     this.memorySegments.forEach(segment => {
       binaryenSegments.push({
-        offset: binaryen.valueOf(reflection.uintType, this.module, segment.offset),
+        offset: this.valueOf(reflection.uintType, segment.offset),
         data: segment.buffer
       });
     });
@@ -719,11 +707,11 @@ export class Compiler {
       this.memoryModel === CompilerMemoryModel.EXPORT_MALLOC
     ) {
       this.globalInitializers[0] = op.setGlobal(".msp", op.call("mspace_init", [
-        binaryen.valueOf(this.uintptrType, op, this.memoryBase) // memoryBase is aligned at this point
-      ], binaryen.typeOf(this.uintptrType, this.uintptrSize)));
+        this.valueOf(this.uintptrType, this.memoryBase) // memoryBase is aligned at this point
+      ], this.typeOf(this.uintptrType)));
     }
 
-    // create a blank start function if there isn't one yet
+    // create a blank start function if there isn't one already
     if (!this.startFunction)
       (this.startFunction = createStartFunction()).initialize(this);
     const previousFunction = this.currentFunction;
@@ -736,7 +724,7 @@ export class Compiler {
       this.memoryModel === CompilerMemoryModel.IMPORT_MALLOC
     ) {
       body.push(op.callImport("malloc_init", [
-        binaryen.valueOf(this.uintptrType, op, this.memoryBase)
+        this.valueOf(this.uintptrType, this.memoryBase)
       ], binaryen.none));
     }
 
@@ -752,7 +740,7 @@ export class Compiler {
     // make sure to check for additional locals
     const additionalLocals: binaryen.Type[] = [];
     for (i = 0; i < this.startFunction.locals.length; ++i)
-      additionalLocals.push(binaryen.typeOf(this.startFunction.locals[i].type, this.uintptrSize));
+      additionalLocals.push(this.typeOf(this.startFunction.locals[i].type));
 
     // and finally add the function
     const startSignature = this.getOrAddSignature([], reflection.voidType);
@@ -781,19 +769,19 @@ export class Compiler {
   /** Compiles a malloc invocation using the specified byte size. */
   compileMallocInvocation(size: number, clearMemory: boolean = true): binaryen.Expression {
     const op = this.module;
-    const binaryenPtrType = binaryen.typeOf(this.uintptrType, this.uintptrSize);
+    const binaryenPtrType = this.typeOf(this.uintptrType);
     const mallocIsBuiltin = this.memoryModel === CompilerMemoryModel.MALLOC || this.memoryModel === CompilerMemoryModel.EXPORT_MALLOC;
 
     // Simplify if possible but always obtain a pointer for consistency
     if (size === 0 || !clearMemory)
-      return (mallocIsBuiltin ? op.call : op.callImport)("malloc", [ binaryen.valueOf(this.uintptrType, op, size) ], binaryenPtrType);
+      return (mallocIsBuiltin ? op.call : op.callImport)("malloc", [ this.valueOf(this.uintptrType, size) ], binaryenPtrType);
 
     return (mallocIsBuiltin ? op.call : op.callImport)("memset", [
       (mallocIsBuiltin ? op.call : op.callImport)("malloc", [ // use wrapped malloc here so mspace_malloc can be inlined
-        binaryen.valueOf(this.uintptrType, op, size)
+        this.valueOf(this.uintptrType, size)
       ], binaryenPtrType),
       op.i32.const(0), // 2nd memset argument is int
-      binaryen.valueOf(this.uintptrType, op, size)
+      this.valueOf(this.uintptrType, size)
     ], binaryenPtrType);
   }
 
@@ -826,10 +814,10 @@ export class Compiler {
         const property = (<reflection.Class>instance.parent).properties[param.name];
         if (property)
           body.push(
-            compileStore(this, /* solely used for diagnostics anyway */ <typescript.Expression>param.node, property.type, op.getLocal(0, binaryen.typeOf(this.uintptrType, this.uintptrSize)), property.offset, op.getLocal(i + 1, binaryen.typeOf(param.type, this.uintptrSize)))
+            compileStore(this, /* solely used for diagnostics anyway */ <typescript.Expression>param.node, property.type, op.getLocal(0, this.typeOf(this.uintptrType)), property.offset, op.getLocal(i + 1, this.typeOf(param.type)))
           );
         else
-          this.error(param.node, "Property initializer parameter without a property");
+          throw Error("missing parameter property");
       }
     }
 
@@ -846,7 +834,7 @@ export class Compiler {
       ));
     }
 
-    const binaryenPtrType = binaryen.typeOf(this.uintptrType, this.uintptrSize);
+    const binaryenPtrType = this.typeOf(this.uintptrType);
 
     if (instance.isConstructor && (<reflection.Class>instance.parent).implicitMalloc) {
 
@@ -874,15 +862,16 @@ export class Compiler {
 
     } // TODO: what to do with instance property initializers with explicit malloc? set afterwards, using the ctor's return value?
 
-    const additionalLocals = instance.locals.slice(initialLocalsIndex).map(local => binaryen.typeOf(local.type, this.uintptrSize));
+    const additionalLocals = instance.locals.slice(initialLocalsIndex).map(local => this.typeOf(local.type));
     const binaryenFunction = instance.binaryenFunction = this.module.addFunction(instance.name, instance.binaryenSignature, additionalLocals, op.block("", body));
 
     if (instance.isExport)
       this.module.addExport(instance.name, instance.name);
 
-    if (!instance.parent && instance.body && typescript.isStartFunction(instance.declaration)) {
+    if (!instance.parent && instance.body && util.isStartFunction(instance.declaration)) {
       if (this.userStartFunction)
-        this.error(<typescript.Identifier>instance.declaration.name, "Duplicate start function");
+        this.report(<typescript.Identifier>instance.declaration.name, typescript.DiagnosticsEx.Start_function_has_already_been_defined);
+        // TODO: report previous declaration using typescript.DiagnosticsEx.Start_function_already_defined_here
       else
         this.userStartFunction = binaryenFunction;
     }
@@ -901,8 +890,8 @@ export class Compiler {
         case typescript.SyntaxKind.MethodDeclaration:
         {
           const methodDeclaration = <typescript.ConstructorDeclaration | typescript.MethodDeclaration>member;
-          if (typescript.isExport(methodDeclaration) || this.options.treeShaking === false) {
-            const functionInstance = typescript.getReflectedFunction(methodDeclaration);
+          if (util.isExport(methodDeclaration) || this.options.treeShaking === false) {
+            const functionInstance = util.getReflectedFunction(methodDeclaration);
             if (functionInstance) // otherwise generic: compiled once type arguments are known
               this.compileFunction(functionInstance);
           }
@@ -941,7 +930,7 @@ export class Compiler {
   compileExpression(node: typescript.Expression, contextualType: reflection.Type, convertToType?: reflection.Type, convertExplicit: boolean = false): binaryen.Expression {
     let expr = expressions.compile(this, node, contextualType);
     if (convertToType)
-      expr = this.maybeConvertValue(node, expr, typescript.getReflectedType(node), convertToType, convertExplicit);
+      expr = this.maybeConvertValue(node, expr, util.getReflectedType(node), convertToType, convertExplicit);
     return expr;
   }
 
@@ -954,20 +943,20 @@ export class Compiler {
     const op = this.module;
 
     function illegalImplicitConversion() {
-      compiler.error(node, "Illegal implicit conversion", "'" + fromType + "' to '" + toType + "'");
+      compiler.report(node, typescript.DiagnosticsEx.Conversion_from_0_to_1_requires_an_explicit_cast, fromType.toString(), toType.toString());
       explicit = true; // report this only once for the topmost node
     }
 
     if (!explicit) {
 
-      if (this.uintptrSize === 4 && fromType.kind === reflection.TypeKind.uintptr && toType.isInt)
-        this.warn(node, "Non-portable conversion", "Implicit conversion from 'uintptr' to 'uint' will fail when targeting WASM64");
-
-      if (this.uintptrSize === 8 && fromType.isLong && toType.kind === reflection.TypeKind.uintptr)
-        this.warn(node, "Non-portable conversion", "Implicit conversion from 'ulong' to 'uintptr' will fail when targeting WASM32");
+      if (
+        (this.uintptrSize === 4 && fromType.kind === reflection.TypeKind.uintptr && toType.isInt) ||
+        (this.uintptrSize === 8 && fromType.isLong && toType.kind === reflection.TypeKind.uintptr)
+      )
+        this.report(node, typescript.DiagnosticsEx.Conversion_from_0_to_1_will_fail_when_switching_between_WASM32_64, fromType.toString(), toType.toString());
     }
 
-    typescript.setReflectedType(node, toType);
+    util.setReflectedType(node, toType);
 
     if (fromType === reflection.floatType) {
 
@@ -1177,21 +1166,21 @@ export class Compiler {
   }
 
   /** Resolves a TypeScript type to a AssemblyScript type. */
-  resolveType(type: typescript.TypeNode, acceptVoid: boolean = false, typeArgumentsMap?: { [key: string]: reflection.TypeArgument }): reflection.Type {
+  resolveType(type: typescript.TypeNode, acceptVoid: boolean = false, typeArgumentsMap?: { [key: string]: reflection.TypeArgument }): reflection.Type | null {
 
     switch (type.kind) {
 
       case typescript.SyntaxKind.VoidKeyword:
         if (!acceptVoid)
-          this.error(type, "Illegal type", "void");
+          this.report(type, typescript.DiagnosticsEx.Type_0_is_invalid_in_this_context, "void");
         return reflection.voidType;
 
       case typescript.SyntaxKind.BooleanKeyword:
-        this.warn(type, "Assuming 'bool'");
+        this.report(type, typescript.DiagnosticsEx.Assuming_0_instead_of_1, "bool", "boolean");
         return reflection.boolType;
 
       case typescript.SyntaxKind.NumberKeyword:
-        this.warn(type, "Assuming 'double'");
+        this.report(type, typescript.DiagnosticsEx.Assuming_0_instead_of_1, "double", "number");
         return reflection.doubleType;
 
       case typescript.SyntaxKind.ThisKeyword:
@@ -1264,8 +1253,8 @@ export class Compiler {
       }
     }
 
-    this.error(type, "Unsupported type", typescript.getTextOfNode(type));
-    return reflection.voidType;
+    this.report(type, typescript.DiagnosticsEx.Unresolvable_type_0, typescript.getTextOfNode(type));
+    return null;
   }
 
   /** Resolves an identifier or name to the corresponding reflection object. */
@@ -1276,7 +1265,7 @@ export class Compiler {
     if (this.currentFunction && this.currentFunction.localsByName[localName])
       return this.currentFunction.localsByName[localName];
 
-    // Globals
+    // Globals, enums and classes
     const symbol = this.checker.getSymbolAtLocation(node);
     if (symbol && symbol.declarations) { // Determine declaration site
 
@@ -1298,6 +1287,144 @@ export class Compiler {
       }
     }
     return null;
+  }
+
+  /** Computes the binaryen signature identifier of a reflected type. */
+  identifierOf(type: reflection.Type): string {
+    switch (type.kind) {
+
+      case reflection.TypeKind.sbyte:
+      case reflection.TypeKind.byte:
+      case reflection.TypeKind.short:
+      case reflection.TypeKind.ushort:
+      case reflection.TypeKind.int:
+      case reflection.TypeKind.uint:
+      case reflection.TypeKind.bool:
+        return "i";
+
+      case reflection.TypeKind.long:
+      case reflection.TypeKind.ulong:
+        return "I";
+
+      case reflection.TypeKind.float:
+        return "f";
+
+      case reflection.TypeKind.double:
+        return "F";
+
+      case reflection.TypeKind.uintptr:
+        return this.uintptrType === reflection.uintptrType32 ? "i" : "I";
+
+      case reflection.TypeKind.void:
+        return "v";
+    }
+    throw Error("unexpected type");
+  }
+
+  /** Computes the binaryen type of a reflected type. */
+  typeOf(type: reflection.Type): binaryen.Type {
+    switch (type.kind) {
+
+      case reflection.TypeKind.sbyte:
+      case reflection.TypeKind.byte:
+      case reflection.TypeKind.short:
+      case reflection.TypeKind.ushort:
+      case reflection.TypeKind.int:
+      case reflection.TypeKind.uint:
+      case reflection.TypeKind.bool:
+        return binaryen.i32;
+
+      case reflection.TypeKind.long:
+      case reflection.TypeKind.ulong:
+        return binaryen.i64;
+
+      case reflection.TypeKind.float:
+        return binaryen.f32;
+
+      case reflection.TypeKind.double:
+        return binaryen.f64;
+
+      case reflection.TypeKind.uintptr:
+        return this.uintptrType === reflection.uintptrType32 ? binaryen.i32 : binaryen.i64;
+
+      case reflection.TypeKind.void:
+        return binaryen.none;
+    }
+    throw Error("unexpected type");
+  }
+
+  /** Computes the binaryen opcode category (i32, i64, f32, f64) of a reflected type. */
+  categoryOf(type: reflection.Type): binaryen.I32Operations | binaryen.I64Operations | binaryen.F32Operations | binaryen.F64Operations {
+    const op = this.module;
+
+    switch (type.kind) {
+
+      case reflection.TypeKind.sbyte:
+      case reflection.TypeKind.byte:
+      case reflection.TypeKind.short:
+      case reflection.TypeKind.ushort:
+      case reflection.TypeKind.int:
+      case reflection.TypeKind.uint:
+      case reflection.TypeKind.bool:
+        return op.i32;
+
+      case reflection.TypeKind.long:
+      case reflection.TypeKind.ulong:
+        return op.i64;
+
+      case reflection.TypeKind.float:
+        return op.f32;
+
+      case reflection.TypeKind.double:
+        return op.f64;
+
+      case reflection.TypeKind.uintptr:
+        return this.uintptrType === reflection.uintptrType32 ? op.i32 : op.i64;
+    }
+    throw Error("unexpected type");
+  }
+
+  /** Computes the constant value binaryen expression of the specified reflected type. */
+  valueOf(type: reflection.Type, value: number | Long): binaryen.Expression {
+    const op = this.module;
+
+    if (type.isLong) {
+      const long = Long.fromValue(value);
+      return op.i64.const(long.low, long.high);
+    } else if (Long.isLong(value))
+      value = Long.fromValue(value).toNumber();
+
+    value = <number>value;
+
+    switch (type.kind) {
+
+      case reflection.TypeKind.byte:
+        return op.i32.const(value & 0xff);
+
+      case reflection.TypeKind.sbyte:
+        return op.i32.const((value << 24) >> 24);
+
+      case reflection.TypeKind.short:
+        return op.i32.const((value << 16) >> 16);
+
+      case reflection.TypeKind.ushort:
+        return op.i32.const(value & 0xffff);
+
+      case reflection.TypeKind.int:
+      case reflection.TypeKind.uint:
+      case reflection.TypeKind.uintptr: // long already handled
+        return op.i32.const(value);
+
+      case reflection.TypeKind.bool:
+        return op.i32.const(value ? 1 : 0);
+
+      case reflection.TypeKind.float:
+        return op.f32.const(value);
+
+      case reflection.TypeKind.double:
+        return op.f64.const(value);
+    }
+    throw Error("unexpected type");
   }
 }
 

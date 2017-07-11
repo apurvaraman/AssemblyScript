@@ -1,8 +1,8 @@
 /** @module assemblyscript/expressions */ /** */
 
+import * as binaryen from "binaryen";
 import Compiler from "../compiler";
 import * as type from "../reflection/type";
-import * as binaryen from "../binaryen";
 import * as reflection from "../reflection";
 
 export function compileVoidAsArrayElement(compiler: Compiler, elementType: reflection.Type): binaryen.Expression {

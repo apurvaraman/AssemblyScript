@@ -1,16 +1,17 @@
 /** @module assemblyscript/expressions */ /** */
 
-import * as binaryen from "../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
 import * as expressions from "../expressions";
 import * as type from "../reflection/type";
+import * as util from "../util";
 
 export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type): binaryen.Expression {
     const op = compiler.module;
 
-    typescript.setReflectedType(node, contextualType);
+    util.setReflectedType(node, contextualType);
     const sizeArgument = op.i32.const(node.elements.length);
     const clazz = <reflection.Class>contextualType.underlyingClass;
     const elementType = Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type);
@@ -18,10 +19,10 @@ export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLi
 }
 
 export function compileArrayWithType(compiler: Compiler, sizeArgument: binaryen.I32Expression, elementType: type.Type): binaryen.Expression {
-    const uintptrCategory = binaryen.categoryOf(compiler.uintptrType, compiler.module, compiler.uintptrSize);
+    const uintptrCategory = compiler.categoryOf(compiler.uintptrType);
     const newsize = compiler.currentFunction.localsByName[".newsize"] || compiler.currentFunction.addLocal(".newsize", compiler.uintptrType);
     const newptr = compiler.currentFunction.localsByName[".newptr"] || compiler.currentFunction.addLocal(".newptr", compiler.uintptrType);
-    const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
+    const binaryenPtrType = compiler.typeOf(compiler.uintptrType);
     const op = compiler.module;
 
     return op.block("", [
@@ -32,9 +33,9 @@ export function compileArrayWithType(compiler: Compiler, sizeArgument: binaryen.
         op.call("memset", [
           op.call("malloc", [ // use wrapped malloc here so mspace_malloc can be inlined
             uintptrCategory.add(
-              binaryen.valueOf(compiler.uintptrType, op, reflection.uintType.size), // length as an (u)int
+              compiler.valueOf(compiler.uintptrType, reflection.uintType.size), // length as an (u)int
               uintptrCategory.mul(
-                binaryen.valueOf(compiler.uintptrType, op, elementType.size),
+                compiler.valueOf(compiler.uintptrType, elementType.size),
                 op.teeLocal(newsize.index, sizeArgument)
               )
             )
@@ -54,7 +55,7 @@ export function compileArrayWithType(compiler: Compiler, sizeArgument: binaryen.
 export function initializeElementsOfArray(compiler: Compiler, node: typescript.ArrayLiteralExpression, contextualType: reflection.Type, arrayName: string, initializers: binaryen.Expression[]) {
   const op = compiler.module;
 
-  typescript.setReflectedType(node, contextualType);
+  util.setReflectedType(node, contextualType);
 
   const clazz = <reflection.Class>contextualType.underlyingClass;
   const elementTypeSize = (Object.keys(clazz.typeArguments).map(key => clazz.typeArguments[key].type))[0].size;
@@ -119,7 +120,7 @@ export function initializeElementsOfArray(compiler: Compiler, node: typescript.A
 
 export function getMemoryIndexOfElementArray(compiler: Compiler, elementTypeSize: number, elementIndex: number, nameOfArray: string): binaryen.I32Expression {
   const op = compiler.module;
-  const binaryenPtrType = binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize);
+  const binaryenPtrType = compiler.typeOf(compiler.uintptrType);
 
      return op.i32.add(
               op.i32.mul(

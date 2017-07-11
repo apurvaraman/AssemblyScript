@@ -7,10 +7,11 @@
  * @module assemblyscript/builtins
  */ /** */
 
-import * as binaryen from "./binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "./compiler";
 import * as reflection from "./reflection";
 import * as typescript from "./typescript";
+import * as util from "./util";
 
 /** Tests if the specified function name corresponds to a built-in function. */
 export function isBuiltin(name: string, isGlobalName: boolean = true): boolean {
@@ -106,8 +107,8 @@ export interface BinaryenExpressionPair {
 /** Compiles a sign-agnostic rotate left operation. */
 export function rotl(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
-  const leftType = typescript.getReflectedType(node[0]);
-  const rightType = typescript.getReflectedType(node[1]);
+  const leftType = util.getReflectedType(node[0]);
+  const rightType = util.getReflectedType(node[1]);
 
   if (leftType === rightType) {
 
@@ -131,8 +132,8 @@ export function rotl(compiler: Compiler, node: TypeScriptExpressionPair, expr: B
 export function rotr(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
 
-  const leftType = typescript.getReflectedType(node[0]);
-  const rightType = typescript.getReflectedType(node[1]);
+  const leftType = util.getReflectedType(node[0]);
+  const rightType = util.getReflectedType(node[1]);
 
   if (leftType === rightType) {
     switch (leftType) {
@@ -155,7 +156,7 @@ export function rotr(compiler: Compiler, node: TypeScriptExpressionPair, expr: B
 export function clz(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.intType:
@@ -175,7 +176,7 @@ export function clz(compiler: Compiler, node: typescript.Expression, expr: binar
 export function ctz(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.intType:
@@ -195,7 +196,7 @@ export function ctz(compiler: Compiler, node: typescript.Expression, expr: binar
 export function popcnt(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.intType:
@@ -215,7 +216,7 @@ export function popcnt(compiler: Compiler, node: typescript.Expression, expr: bi
 export function abs(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.floatType:
@@ -231,7 +232,7 @@ export function abs(compiler: Compiler, node: typescript.Expression, expr: binar
 export function ceil(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.floatType:
@@ -247,7 +248,7 @@ export function ceil(compiler: Compiler, node: typescript.Expression, expr: bina
 export function floor(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.floatType:
@@ -263,7 +264,7 @@ export function floor(compiler: Compiler, node: typescript.Expression, expr: bin
 export function sqrt(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.floatType:
@@ -279,7 +280,7 @@ export function sqrt(compiler: Compiler, node: typescript.Expression, expr: bina
 export function trunc(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.floatType:
@@ -295,7 +296,7 @@ export function trunc(compiler: Compiler, node: typescript.Expression, expr: bin
 export function nearest(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.floatType:
@@ -311,8 +312,8 @@ export function nearest(compiler: Compiler, node: typescript.Expression, expr: b
 export function min(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
 
-  const leftType = typescript.getReflectedType(node[0]);
-  const rightType = typescript.getReflectedType(node[1]);
+  const leftType = util.getReflectedType(node[0]);
+  const rightType = util.getReflectedType(node[1]);
 
   if (leftType === rightType) {
     switch (leftType) {
@@ -331,8 +332,8 @@ export function min(compiler: Compiler, node: TypeScriptExpressionPair, expr: Bi
 export function max(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
 
-  const leftType = typescript.getReflectedType(node[0]);
-  const rightType = typescript.getReflectedType(node[1]);
+  const leftType = util.getReflectedType(node[0]);
+  const rightType = util.getReflectedType(node[1]);
 
   if (leftType === rightType) {
     switch (leftType) {
@@ -351,8 +352,8 @@ export function max(compiler: Compiler, node: TypeScriptExpressionPair, expr: Bi
 export function copysign(compiler: Compiler, node: TypeScriptExpressionPair, expr: BinaryenExpressionPair): binaryen.Expression {
   const op = compiler.module;
 
-  const leftType = typescript.getReflectedType(node[0]);
-  const rightType = typescript.getReflectedType(node[1]);
+  const leftType = util.getReflectedType(node[0]);
+  const rightType = util.getReflectedType(node[1]);
 
   if (leftType === rightType) {
     switch (leftType) {
@@ -371,7 +372,7 @@ export function copysign(compiler: Compiler, node: TypeScriptExpressionPair, exp
 export function reinterpret(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   switch (type) {
 
     case reflection.intType:
@@ -404,7 +405,7 @@ export function current_memory(compiler: Compiler): binaryen.Expression {
 export function grow_memory(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   if (type.isInt)
     return op.growMemory(expr);
 
@@ -436,11 +437,11 @@ export function unsafe_cast(expr: binaryen.Expression): binaryen.Expression {
 export function isNaN(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   if (!type.isAnyFloat)
     throw Error("unsupported operation");
 
-  const category = <binaryen.F32Operations | binaryen.F64Operations>binaryen.categoryOf(type, op, compiler.uintptrSize);
+  const category = <binaryen.F32Operations | binaryen.F64Operations>compiler.categoryOf(type);
 
   // value != value
 
@@ -451,7 +452,7 @@ export function isNaN(compiler: Compiler, node: typescript.Expression, expr: bin
   // Otherwise evaluate the compound expression exactly once through introducing a temporary local
   const tempName = type.tempName;
   const temp = compiler.currentFunction.localsByName[tempName] || compiler.currentFunction.addLocal(tempName, type);
-  const tempBinaryenType = binaryen.typeOf(type, compiler.uintptrSize);
+  const tempBinaryenType = compiler.typeOf(type);
 
   return category.ne(
     op.teeLocal(temp.index, expr),
@@ -463,11 +464,11 @@ export function isNaN(compiler: Compiler, node: typescript.Expression, expr: bin
 export function isFinite(compiler: Compiler, node: typescript.Expression, expr: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  const type = typescript.getReflectedType(node);
+  const type = util.getReflectedType(node);
   if (!type.isAnyFloat)
     throw Error("unsupported operation");
 
-  const category = <binaryen.F32Operations | binaryen.F64Operations>binaryen.categoryOf(type, op, compiler.uintptrSize);
+  const category = <binaryen.F32Operations | binaryen.F64Operations>compiler.categoryOf(type);
 
   // !(value != value) && abs(value) != Infinity
 
@@ -478,14 +479,14 @@ export function isFinite(compiler: Compiler, node: typescript.Expression, expr: 
       op.i32.const(0),
       category.ne(
         category.abs(expr),
-        binaryen.valueOf(type, op, Infinity)
+        compiler.valueOf(type, Infinity)
       )
     );
 
   // Otherwise evaluate the compound expression exactly once through introducing a temporary local
   const tempName = type.tempName;
   const temp = compiler.currentFunction.localsByName[tempName] || compiler.currentFunction.addLocal(tempName, type);
-  const tempBinaryenType = binaryen.typeOf(type, compiler.uintptrSize);
+  const tempBinaryenType = compiler.typeOf(type);
 
   return op.select(
     category.ne(
@@ -497,7 +498,7 @@ export function isFinite(compiler: Compiler, node: typescript.Expression, expr: 
       category.abs(
         op.getLocal(temp.index, tempBinaryenType)
       ),
-      binaryen.valueOf(type, op, Infinity)
+      compiler.valueOf(type, Infinity)
     )
   );
 }

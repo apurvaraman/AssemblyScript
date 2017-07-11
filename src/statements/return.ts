@@ -1,6 +1,6 @@
 /** @module assemblyscript/statements */ /** */
 
-import * as binaryen from "../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../compiler";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
@@ -12,7 +12,7 @@ export function compileReturn(compiler: Compiler, node: typescript.ReturnStateme
   if (compiler.currentFunction.returnType === reflection.voidType) {
 
     if (node.expression)
-      compiler.error(node, "Function cannot return a value", "Return type is 'void'");
+      compiler.report(node, typescript.DiagnosticsEx.Function_without_a_return_type_cannot_return_a_value);
 
     return op.return();
   }
@@ -22,7 +22,7 @@ export function compileReturn(compiler: Compiler, node: typescript.ReturnStateme
       compiler.compileExpression(<typescript.Expression>node.expression, compiler.currentFunction.returnType, compiler.currentFunction.returnType, false)
     );
 
-  compiler.error(node, "Function must return a value", "Return type is '" + compiler.currentFunction.returnType + "'");
+  compiler.report(node, typescript.DiagnosticsEx.Function_with_a_return_type_must_return_a_value);
   return op.unreachable();
 }
 

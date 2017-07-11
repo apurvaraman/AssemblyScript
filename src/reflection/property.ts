@@ -2,6 +2,7 @@
 
 import Type from "./type";
 import * as typescript from "../typescript";
+import * as util from "../util";
 
 /** A reflected property. Also used to describe enum values. */
 export class Property {
@@ -27,7 +28,7 @@ export class Property {
   }
 
   /** Tests if this property is an instance member / not static. */
-  get isInstance(): boolean { return this.declaration.kind !== typescript.SyntaxKind.EnumMember && !typescript.isStatic(this.declaration); }
+  get isInstance(): boolean { return this.declaration.kind !== typescript.SyntaxKind.EnumMember && !util.isStatic(this.declaration); }
 
   toString(): string { return this.name; }
 }

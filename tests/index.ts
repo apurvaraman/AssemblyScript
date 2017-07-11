@@ -4,7 +4,7 @@ import * as tape from "tape";
 import * as jsdiff from "diff";
 import * as chalk from "chalk";
 import * as minimist from "minimist";
-import * as util from "./util";
+import * as testUtil from "./util";
 
 const argv = minimist(process.argv.slice(2), {
   default: {
@@ -34,21 +34,24 @@ if (argv.help) {
   process.exit(EUSAGE);
 }
 
+import * as binaryen from "binaryen";
+
 // test sources
 import Compiler from "../src/compiler";
-import * as binaryen from "../src/binaryen";
-import * as typescript from "../src/typescript";
-import * as wabt from "../src/wabt";
+import * as assemblyscript from "../src";
 if (argv.src !== false)
-  runTests("src", Compiler, binaryen, typescript, wabt);
+  runTests("src", assemblyscript);
 
 // test distribution
 import * as dist from "..";
 if (argv.dist !== false)
-  runTests("dist", dist.Compiler, dist.binaryen, dist.typescript, dist.wabt);
+  runTests("dist", <typeof assemblyscript><any>dist);
 
 // common test runner for both source and the distribution files
-function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, wabt: any) {
+function runTests(kind: string, exports: typeof assemblyscript) {
+  const Compiler = exports.Compiler;
+  const typescript = exports.typescript;
+  const util = exports.util;
 
   // 1) test compiler results to match fictures
   tape(kind + " - fixtures", test => {
@@ -160,7 +163,7 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
 
       // async subtest
       test.test(kind + " - interop - " + name, test => {
-        util.load(buffer)
+        testUtil.load(buffer)
         .then(module => runner(test, module))
         .catch(err => {
           test.fail("loading " + name + ".wasm should not be rejected (" + err.message + ")");
@@ -212,8 +215,8 @@ function runTests(kind: string, Compiler: any, binaryen: any, typescript: any, w
       ""
     ].join("\n");
     test.doesNotThrow(() => {
-      const wasm = wabt.wastToWasm(source, { filename: "test.wasm", writeDebugNames: true });
-      const wast = wabt.wasmToWast(wasm, { readDebugNames: true });
+      const wasm = util.wastToWasm(source, { filename: "test.wasm", writeDebugNames: true });
+      const wast = util.wasmToWast(wasm, { readDebugNames: true });
       test.equal(wast, source, "should convert from wast to wasm and back");
     }, "should convert between wast and wasm without throwing");
 
@@ -234,7 +237,7 @@ function distill(text: string): string {
 const baseOptions = { "silent": true };
 
 /** Gets additional options of a source file. */
-function getOptions(source: string): string {
+function getOptions(source: string): { [key: string]: any } {
   const firstLine = source.split(/\r?\n/, 1)[0];
   let opts = Object.create(baseOptions);
   if (firstLine.substring(0, 3) === "//!") {

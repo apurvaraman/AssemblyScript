@@ -1,0 +1,86 @@
+{
+  "Unsupported node kind {0} in {1}.": {
+    "code": 100,
+    "category": "Error"
+  },
+  "Unsupported modifier: {0}": {
+    "code": 101,
+    "category": "Warning"
+  },
+  "Unsupported literal: {0}": {
+    "code": 102,
+    "category": "Error"
+  },
+  "Type expected.": {
+    "code": 103,
+    "category": "Error"
+  },
+  "Unresolvable type: {0}": {
+    "code": 104,
+    "category": "Error"
+  },
+  "Unresolvable identifier: {0}": {
+    "code": 105,
+    "category": "Error"
+  },
+  "Start function has already been defined.": {
+    "code": 106,
+    "category": "Error"
+  },
+  "Start function already defined here.": {
+    "code": 107,
+    "category": "Message"
+  },
+  "Conversion from '{0}' to '{1}' requires an explicit cast.": {
+    "code": 108,
+    "category": "Error"
+  },
+  "Conversion from '{0}' to '{1}' will fail when switching between WASM32/64.'": {
+    "code": 109,
+    "category": "Warning"
+  },
+  "Type '{0}' is invalid in this context.": {
+    "code": 110,
+    "category": "Error"
+  },
+  "Identifier '{0}' is invalid in this context.": {
+    "code": 111,
+    "category": "Error"
+  },
+  "Assuming '{0}' instead of '{1}'.": {
+    "code": 112,
+    "category": "Warning"
+  },
+  "Assuming return type '{0}'.": {
+    "code": 113,
+    "category": "Warning"
+  },
+  "Assuming variable type '{0}'.": {
+    "code": 114,
+    "category": "Warning"
+  },
+  "Types '{0}' and '{1}' are incompatible.": {
+    "code": 115,
+    "category": "Error"
+  },
+  "Literal overflow: Compiling to a value in range {0} to {1} instead.": {
+    "code": 116,
+    "category": "Warning"
+  },
+  "Optional parameters must specify an initializer.": {
+    "code": 117,
+    "category": "Error"
+  },
+  "Unconditional endless loop detected.": {
+    "code": 118,
+    "category": "Error"
+  },
+  "Function with a return type must return a value.": {
+    "code": 119,
+    "category": "Error"
+  },
+  "Function without a return type cannot return a value.": {
+    "code": 120,
+    "category": "Error"
+  }
+}

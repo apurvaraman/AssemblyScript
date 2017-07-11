@@ -1,17 +1,18 @@
 /** @module assemblyscript/expressions */ /** */
 
-import * as binaryen from "../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../compiler";
 import compileLoadOrStore from "./helpers/loadorstore";
 import * as reflection from "../reflection";
 import * as typescript from "../typescript";
+import * as util from "../util";
 
 /** Compiles a property access expression. Sets the property's value to `valueNode` if specified, otherwise gets it. */
 export function compilePropertyAccess(compiler: Compiler, node: typescript.PropertyAccessExpression, contextualType: reflection.Type, valueNode?: typescript.Expression): binaryen.Expression {
   const op = compiler.module;
 
   // fall back to contextual type on error
-  typescript.setReflectedType(node, contextualType);
+  util.setReflectedType(node, contextualType);
 
   // obtain the property's name
   const propertyName = typescript.getTextOfNode(node.name);
@@ -23,23 +24,23 @@ export function compilePropertyAccess(compiler: Compiler, node: typescript.Prope
     // enum values are constants
     if (reference instanceof reflection.Enum) {
       if (valueNode)
-        compiler.error(valueNode, "Cannot assign to a constant");
+        throw Error("trying to assign to enum value"); // handled by typescript
 
-      typescript.setReflectedType(node, reflection.intType);
+      util.setReflectedType(node, reflection.intType);
 
       const enm = <reflection.Enum>reference;
       const property = enm.values[propertyName];
 
-      if (property) {
-        const value = compiler.checker.getConstantValue(<typescript.EnumMember>property.declaration);
-        if (typeof value === "number") {
-          typescript.setReflectedType(node, property.type);
-          return binaryen.valueOf(property.type, op, value);
-        }
-        compiler.error(node, "Unsupported enum value", value);
-        return op.unreachable();
+      if (!property)
+        throw Error("no such enum property"); // handled by typescript
+
+      const value = compiler.checker.getConstantValue(<typescript.EnumMember>property.declaration);
+      if (typeof value === "number") {
+        util.setReflectedType(node, property.type);
+        return compiler.valueOf(property.type, value);
       }
-      compiler.error(node, "No such enum value", propertyName);
+
+      compiler.report(node.expression, typescript.DiagnosticsEx.Unsupported_literal_0, value);
       return op.unreachable();
 
     // static class properties are globals
@@ -58,43 +59,39 @@ export function compilePropertyAccess(compiler: Compiler, node: typescript.Prope
             if (contextualType === reflection.voidType)
               return op.setGlobal(global.name, valueExpression);
 
-            typescript.setReflectedType(node, global.type);
-            const binaryenType = binaryen.typeOf(global.type, compiler.uintptrSize);
+            util.setReflectedType(node, global.type);
+            const binaryenType = compiler.typeOf(global.type);
             return op.block("", [ // emulate tee_global
               op.setGlobal(global.name, valueExpression),
               op.getGlobal(global.name, binaryenType)
             ], binaryenType);
 
           } else {
-            typescript.setReflectedType(node, global.type);
-            return op.getGlobal(global.name, binaryen.typeOf(global.type, compiler.uintptrSize));
+            util.setReflectedType(node, global.type);
+            return op.getGlobal(global.name, compiler.typeOf(global.type));
           }
         } else
           throw Error("unexpected uninitialized global");
 
-      } else {
-        compiler.error(node, "No such static property", "'" + propertyName + "' on " + clazz.name);
-        return op.unreachable();
-      }
+      } else
+        throw Error("no such static property '" + propertyName + "' on " + clazz.name); // handled by typescript
     }
   }
 
   const expression = compiler.compileExpression(node.expression, compiler.uintptrType);
-  const expressionType = typescript.getReflectedType(node.expression);
+  const expressionType = util.getReflectedType(node.expression);
 
-  if (!(expressionType && expressionType.underlyingClass)) {
-    compiler.error(node, "Property access used on non-object");
-    return op.unreachable();
-  }
+  if (!(expressionType && expressionType.underlyingClass))
+    throw Error("property access used on non-object"); // handled by typescript
 
   const clazz = expressionType.underlyingClass;
   const property = clazz.properties[propertyName];
   if (property) {
-    typescript.setReflectedType(node, property.type);
+    util.setReflectedType(node, property.type);
 
     let valueExpression: binaryen.Expression | undefined;
     if (valueNode)
-      valueExpression = compiler.maybeConvertValue(valueNode, compiler.compileExpression(valueNode, property.type), typescript.getReflectedType(valueNode), property.type, false);
+      valueExpression = compiler.maybeConvertValue(valueNode, compiler.compileExpression(valueNode, property.type), util.getReflectedType(valueNode), property.type, false);
 
     return compileLoadOrStore(compiler, node, property.type, expression, property.offset, valueExpression, contextualType);
   } else {
@@ -102,16 +99,14 @@ export function compilePropertyAccess(compiler: Compiler, node: typescript.Prope
     if (method) {
       // TODO
       if (method.template.isGetter) {
-        compiler.error(node, "Using getters as properties is not supported yet");
+        compiler.report(node, typescript.DiagnosticsEx.Unsupported_modifier_0, "get");
       } else if (method.template.isSetter) {
-        compiler.error(node, "Using setters as properties is not supported yet");
+        compiler.report(node, typescript.DiagnosticsEx.Unsupported_modifier_0, "set");
       } else
-        compiler.error(node, "Cannot use a method as a property");
+        throw Error("trying to use a method as a property"); // handled by typescript
       return op.unreachable();
-    } else {
-      compiler.error(node, "No such property");
-      return op.unreachable();
-    }
+    } else
+      throw Error("no such property"); // handled by typescript
   }
 }
 

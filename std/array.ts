@@ -88,11 +88,11 @@ export class Array<T> extends Disposable {
     if (end < begin)
       end = begin;
 
-    const arrayLength: int = end - begin;
-    const elementsByteSize: uintptr = (arrayLength as uintptr) * sizeof<T>();
+    const capacity: int = end - begin;
+    const elementsByteSize: uintptr = (capacity as uintptr) * sizeof<T>();
     const ptr: uintptr = malloc(sizeof<ArrayStruct>() + elementsByteSize);
 
-    unsafe_cast<uintptr,ArrayStruct>(ptr).length = arrayLength;
+    unsafe_cast<uintptr,ArrayStruct>(ptr).length = capacity;
     memcpy(ptr + sizeof<ArrayStruct>(), unsafe_cast<this,uintptr>(this) + sizeof<ArrayStruct>() + begin * sizeof<T>(), elementsByteSize);
 
     return unsafe_cast<uintptr,this>(ptr);
@@ -113,6 +113,28 @@ export class Array<T> extends Disposable {
     // and returning a reference to the array
     return this;
   }
+
+  /* unsafeGrow(newCapacity: int): this {
+    const oldCapacity: int = this.capacity;
+    const length: int = this.length;
+
+    if (newCapacity <= oldCapacity)
+      unreachable();
+
+    const oldElementsByteSize: uintptr = (oldCapacity as uintptr) * sizeof<T>();
+    const newElementsByteSize: uintptr = (newCapacity as uintptr) * sizeof<T>();
+    const ptr: uintptr = malloc(sizeof<ArrayStruct>() + newElementsByteSize);
+    const struct: ArrayStruct = unsafe_cast<uintptr,ArrayStruct>(ptr);
+
+    struct.capacity = newCapacity;
+    struct.length = length;
+
+    memcpy(ptr + sizeof<ArrayStruct>(), unsafe_cast<this,uintptr>(this) + sizeof<ArrayStruct>(), oldElementsByteSize);
+    memset(ptr + sizeof<ArrayStruct>() + oldElementsByteSize, 0, newElementsByteSize - oldElementsByteSize);
+    free(unsafe_cast<this,uintptr>(this));
+
+    return unsafe_cast<uintptr,this>(ptr);
+  } */
 }
 
 // transient helper struct used to set the otherwise readonly length property

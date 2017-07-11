@@ -1,15 +1,16 @@
 /** @module assemblyscript/expressions */ /** */
 
-import * as binaryen from "../../binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "../../compiler";
 import * as reflection from "../../reflection";
 import * as typescript from "../../typescript";
+import * as util from "../../util";
 
 /** Helper compiling a store operation. */
 export function compileStore(compiler: Compiler, node: typescript.Expression, type: reflection.Type, ptr: binaryen.Expression, offset: number, value: binaryen.Expression): binaryen.Expression {
   const op = compiler.module;
 
-  typescript.setReflectedType(node, type);
+  util.setReflectedType(node, type);
 
   switch (type.kind) {
 
@@ -42,7 +43,7 @@ export function compileStore(compiler: Compiler, node: typescript.Expression, ty
     case reflection.TypeKind.double:
       return op.f64.store(offset, type.size, ptr, value);
   }
-  throw Error("unexpected type");
+  throw Error("unexpected type"); // should handle all possible types above
 }
 
 export { compileStore as default };

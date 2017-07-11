@@ -1,16 +1,13 @@
 /**
- * A re-exporting wrapper around the relevant parts of TypeScript.
+ * The relevant parts of TypeScript.
  *
- * Note that the API documentation does not reference any re-exports because this isn't supported
- * by the documentation generator.
- *
- * For additional exports, see: https://github.com/dcodeIO/AssemblyScript/blob/master/src/typescript.ts
+ * For all exports, see: https://github.com/dcodeIO/AssemblyScript/blob/master/src/typescript.ts
  *
  * @module assemblyscript/typescript
+ * @preferred
  */ /** */
 
 import * as path from "path";
-import * as reflection from "./reflection";
 import * as ts from "../lib/typescript/build";
 import * as library from "./library";
 
@@ -34,7 +31,6 @@ export import DiagnosticCategory = ts.DiagnosticCategory;
 export import DiagnosticCollection = ts.DiagnosticCollection;
 export import DiagnosticMessage = ts.DiagnosticMessage;
 export import Diagnostic = ts.Diagnostic;
-export import Diagnostics = ts.Diagnostics;
 export import DoStatement = ts.DoStatement;
 export import ElementAccessExpression = ts.ElementAccessExpression;
 export import EnumDeclaration = ts.EnumDeclaration;
@@ -51,7 +47,7 @@ export import Identifier = ts.Identifier;
 export import IfStatement = ts.IfStatement;
 export import LiteralExpression = ts.LiteralExpression;
 export import MethodDeclaration = ts.MethodDeclaration;
-       import ModifierFlags = ts.ModifierFlags;
+export import ModifierFlags = ts.ModifierFlags;
        import ModuleKind = ts.ModuleKind;
 export import NewExpression = ts.NewExpression;
 export import NodeArray = ts.NodeArray;
@@ -97,6 +93,9 @@ export import createProgram = ts.createProgram;
 export import createSourceFile = ts.createSourceFile;
        import resolveModuleName = ts.resolveModuleName;
        import sys = ts.sys;
+
+// generated diagnostic extensions
+export { DiagnosticsEx } from "./typescript/diagnosticMessages.generated";
 
 /** Default format diagnostics host for convenience. */
 export const defaultFormatDiagnosticsHost: FormatDiagnosticsHost = {
@@ -171,19 +170,6 @@ export function createCompilerHost(moduleSearchLocations: string[], entryFileSou
   }
 }
 
-/** Creates a diagnostic message referencing a node. */
-export function createDiagnosticForNodeEx(node: Node, category: DiagnosticCategory, message: string, arg1?: string) {
-  let realMessage = message;
-  if (arg1 != null)
-    realMessage += ": " + arg1;
-  return /* override */ ts.createDiagnosticForNode(node, {
-    key: message.toLowerCase().replace(/\s+/g, "_").replace(/[^\w]/g, ""),
-    category: category,
-    code: <any>"-AS",
-    message: realMessage
-  });
-}
-
 /** Formats a diagnostic message in plain text. */
 export function formatDiagnostics(diagnostics: Diagnostic[], host?: FormatDiagnosticsHost) {
   return /* override */ ts.formatDiagnostics(diagnostics, host || defaultFormatDiagnosticsHost);
@@ -210,125 +196,3 @@ export function printDiagnostic(diagnostic: Diagnostic): void {
       (console.error || console.log)(formatDiagnostics([ diagnostic ], defaultFormatDiagnosticsHost));
   }
 }
-
-/** Tests if the specified node has an 'export' modifier. */
-export function isExport(node: Node): boolean {
-  if (node && node.modifiers)
-    for (let i = 0, k = node.modifiers.length; i < k; ++i)
-      if (node.modifiers[i].kind === SyntaxKind.ExportKeyword)
-        return true;
-  return false;
-}
-
-/** Tests if the specified node has a 'declare' modifier or is part of a class with a 'declare' modifier. */
-export function isDeclare(node: Node): boolean {
-  if (node && node.modifiers)
-    for (let i = 0, k = node.modifiers.length; i < k; ++i)
-      if (node.modifiers[i].kind === SyntaxKind.DeclareKeyword)
-        return true;
-  if (node.parent && node.parent.kind === SyntaxKind.ClassDeclaration)
-    return isDeclare(node.parent);
-  return false;
-}
-
-/** Tests if the specified node has a 'static' modifier or is otherwise part of a static context. */
-export function isStatic(node: Node): boolean {
-  return (<ModifierFlags>node.modifierFlagsCache & ModifierFlags.Static) !== 0;
-}
-
-/** Tests if the specified node has an 'abstract' modifier. */
-export function isAbstract(node: Node): boolean {
-  return (<ModifierFlags>node.modifierFlagsCache & ModifierFlags.Abstract) !== 0;
-}
-
-/** Tests if the specified node is flagged 'const'. */
-export function isConst(node: Node): boolean {
-  return (node.flags & NodeFlags.Const) !== 0;
-}
-
-/** Tests if a function fulfills the requirements to become a start function. */
-export function isStartFunction(node: FunctionLikeDeclaration): boolean {
-  return !!(
-    node.name &&
-    getTextOfNode(node.name) === "start" &&
-    !node.typeParameters &&
-    node.parameters.length === 0 &&
-    node.type &&
-    getTextOfNode(node.type) === "void"
-  );
-}
-
-/** Gets the reflected type of an expression. */
-export function getReflectedType(node: Expression): reflection.Type {
-  return <reflection.Type>(<any>node).reflectedType || null;
-}
-
-/** Sets the reflected type of an expression. */
-export function setReflectedType(node: Expression, type: reflection.Type): void {
-  if (!type) throw Error("type cannot be null");
-  (<any>node).reflectedType = type;
-}
-
-/** Gets the reflected function instance (describing a function with generic types resolved) of a function declaration. */
-export function getReflectedFunction(node: FunctionLikeDeclaration): reflection.Function {
-  return <reflection.Function>(<any>node).reflectedFunction || null;
-}
-
-/** Sets the reflected function instance (describing a function with generic types resolved) of a function declaration. */
-export function setReflectedFunction(node: FunctionLikeDeclaration, instance: reflection.Function): void {
-  if (!instance)
-    throw Error("instance cannot be null");
-  (<any>node).reflectedFunction = instance;
-}
-
-/** Gets the reflected function template (describing a function with unresolved generic types) of a function declaration. */
-export function getReflectedFunctionTemplate(node: FunctionLikeDeclaration): reflection.FunctionTemplate {
-  return <reflection.FunctionTemplate>(<any>node).reflectedFunctionTemplate || null;
-}
-
-/** Sets the reflected function template (describing a function with unresolved generic types) of a function declaration. */
-export function setReflectedFunctionTemplate(node: FunctionLikeDeclaration, template: reflection.FunctionTemplate): void {
-  if (!template)
-    throw Error("template cannot be null");
-  (<any>node).reflectedFunctionTemplate = template;
-}
-
-/** Gets the reflected class instance (describing a class with generic types resolved) of a class declaration. */
-export function getReflectedClass(node: ClassDeclaration): reflection.Class {
-  return <reflection.Class>(<any>node).reflectedClass || null;
-}
-
-/** Sets the reflected class instance (describing a class with generic types resolved) of a class declaration. */
-export function setReflectedClass(node: ClassDeclaration, instance: reflection.Class): void {
-  if (!instance)
-    throw Error("instance cannot be null");
-  (<any>node).reflectedClass = instance;
-}
-
-/** Gets the reflected class template (describing a class with unresolved generic types) of a class declaration. */
-export function getReflectedClassTemplate(node: ClassDeclaration): reflection.ClassTemplate {
-  return <reflection.ClassTemplate>(<any>node).reflectedClass || null;
-}
-
-/** Sets the reflected class template (describing a class with unresolved generic types) of a class declaration. */
-export function setReflectedClassTemplate(node: ClassDeclaration, template: reflection.ClassTemplate): void {
-  if (!template)
-    throw Error("template cannot be null");
-  (<any>node).reflectedClassTemplate = template;
-}
-
-function AS(code: number, message: string, category = DiagnosticCategory.Error): DiagnosticMessage {
-  return {
-    code: <number><any>"/AS" + code,
-    category,
-    key: message.toLowerCase(),
-    message: message
-  };
-}
-
-// TODO: decide if we need something like this
-export const DiagnosticsEx = {
-
-  Unresolvable_type: AS(1000, "Unresolvable type.")
-
-};

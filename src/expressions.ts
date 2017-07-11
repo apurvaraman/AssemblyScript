@@ -22,10 +22,11 @@ export * from "./expressions/postfixunary";
 export * from "./expressions/prefixunary";
 export * from "./expressions/propertyaccess";
 
-import * as binaryen from "./binaryen";
+import * as binaryen from "binaryen";
 import Compiler from "./compiler";
 import * as reflection from "./reflection";
 import * as typescript from "./typescript";
+import * as util from "./util";
 import {
   compileArrayLiteral,
   compileAs,
@@ -47,7 +48,7 @@ import {
 export function compile(compiler: Compiler, node: typescript.Expression, contextualType: reflection.Type): binaryen.Expression {
   const op = compiler.module;
 
-  typescript.setReflectedType(node, contextualType);
+  util.setReflectedType(node, contextualType);
 
   switch (node.kind) {
 
@@ -79,17 +80,17 @@ export function compile(compiler: Compiler, node: typescript.Expression, context
       return compileConditional(compiler, <typescript.ConditionalExpression>node, contextualType);
 
     case typescript.SyntaxKind.CallExpression:
-      return compileCall(compiler, <typescript.CallExpression>node, contextualType);
+      return compileCall(compiler, <typescript.CallExpression>node/*, contextualType*/);
 
     case typescript.SyntaxKind.NewExpression:
       return compileNew(compiler, <typescript.NewExpression>node, contextualType);
 
     case typescript.SyntaxKind.ThisKeyword:
       if (compiler.currentFunction.isInstance && compiler.currentFunction.parent)
-        typescript.setReflectedType(node, compiler.currentFunction.parent.type);
+        util.setReflectedType(node, compiler.currentFunction.parent.type);
       else
-        compiler.error(node, typescript.Diagnostics.this_cannot_be_referenced_in_current_location);
-      return op.getLocal(0, binaryen.typeOf(compiler.uintptrType, compiler.uintptrSize));
+        compiler.report(node, typescript.DiagnosticsEx.Identifier_0_is_invalid_in_this_context, "this");
+      return op.getLocal(0, compiler.typeOf(compiler.uintptrType));
 
     case typescript.SyntaxKind.TrueKeyword:
     case typescript.SyntaxKind.FalseKeyword:
@@ -108,7 +109,7 @@ export function compile(compiler: Compiler, node: typescript.Expression, context
       }
   }
 
-  compiler.error(node, "Unsupported expression node", "SyntaxKind " + node.kind);
-  typescript.setReflectedType(node, contextualType);
+  compiler.report(node, typescript.DiagnosticsEx.Unsupported_node_kind_0_in_1, node.kind, "expressions.compile");
+  util.setReflectedType(node, contextualType);
   return op.unreachable();
 }
