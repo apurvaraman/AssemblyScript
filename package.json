@@ -67,7 +67,7 @@
     "ts-node": "^3.1.0",
     "tslint": "^5.4.3",
     "typedoc": "^0.7.1",
-    "typedoc-plugin-external-module-name": "^1.0.9",
+    "typedoc-plugin-external-module-name": "github:dcodeIO/typedoc-plugin-external-module-name",
     "typescript": "^2.4.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-fs": "^2.4.4",

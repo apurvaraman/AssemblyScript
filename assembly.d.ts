@@ -70,8 +70,10 @@ declare const Infinityf: float;
 
 /** A fixed-size array. */
 declare class Array<T> implements IDisposable {
-  /** Number of array elements. */
-  readonly length: int;
+  /** Maximum number of elements this array can hold without resizing. */
+  readonly capacity: int;
+  /** Number of elements this array currently holds. */
+  length: int;
 
   /** Constructs a new array with the specified number of elements. */
   constructor(arrayLength: int);

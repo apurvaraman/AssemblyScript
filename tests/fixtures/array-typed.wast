@@ -8510,6 +8510,7 @@
  (func $std/array.ts/Array<sbyte> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8531,8 +8532,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8552,6 +8560,7 @@
  (func $std/array.ts/Array<byte> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8573,8 +8582,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8594,6 +8610,7 @@
  (func $std/array.ts/Array<short> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8615,8 +8632,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8636,6 +8660,7 @@
  (func $std/array.ts/Array<ushort> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8657,8 +8682,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8678,6 +8710,7 @@
  (func $std/array.ts/Array<int> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8699,8 +8732,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8720,6 +8760,7 @@
  (func $std/array.ts/Array<uint> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8741,8 +8782,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8762,6 +8810,7 @@
  (func $std/array.ts/Array<long> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8783,8 +8832,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8804,6 +8860,7 @@
  (func $std/array.ts/Array<ulong> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8825,8 +8882,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8846,6 +8910,7 @@
  (func $std/array.ts/Array<float> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8867,8 +8932,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
@@ -8888,6 +8960,7 @@
  (func $std/array.ts/Array<double> (type $2) (param $0 i32) (result i32)
   (local $1 i32)
   (local $2 i32)
+  (local $3 i32)
   (if
    (i32.lt_u
     (get_local $0)
@@ -8909,8 +8982,15 @@
     )
    )
   )
-  (i32.store
+  (set_local $3
    (get_local $2)
+  )
+  (i32.store
+   (get_local $3)
+   (get_local $0)
+  )
+  (i32.store offset=4
+   (get_local $3)
    (get_local $0)
   )
   (drop
