@@ -23,6 +23,7 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
   let rightType: reflection.Type;
   let commonType: reflection.Type | undefined;
   let resultType: reflection.Type;
+  let check: boolean = false;
 
   // TODO: This is most likely incorrect
   switch (node.operatorToken.kind) {
@@ -126,6 +127,30 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
     case typescript.SyntaxKind.EqualsEqualsEqualsToken:
       right = compiler.compileExpression(node.right, leftType);
       rightType = typescript.getReflectedType(node.right);
+      if (leftType.kind !== rightType.kind) {
+        check = true;
+      }
+      if (leftType.isAnyFloat) {
+        if (rightType.isAnyFloat)
+          commonType = leftType.size >= rightType.size ? leftType : rightType;
+        else
+          commonType = leftType;
+      } else if (rightType.isAnyFloat)
+        commonType = rightType;
+      else
+        commonType = leftType.size > rightType.size
+          ? leftType
+          : rightType.size > leftType.size
+            ? rightType
+            : leftType.isSigned === rightType.isSigned
+              ? leftType
+              : leftType.isSigned === contextualType.isSigned
+                ? leftType
+                : rightType;
+
+      left = compiler.maybeConvertValue(node.left, left, leftType, commonType, false);
+      right = compiler.maybeConvertValue(node.right, right, rightType, commonType, false);
+      leftType = rightType = commonType;
       resultType = reflection.boolType;
       break;
 
@@ -231,28 +256,7 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
       // Logical
       case typescript.SyntaxKind.EqualsEqualsEqualsToken:
      //   compiler.warn(node.operatorToken, "Assuming '=='");
-        if (leftType.kind !== rightType.kind) {
-          if (leftType.isAnyFloat) {
-            if (rightType.isAnyFloat)
-              commonType = leftType.size >= rightType.size ? leftType : rightType;
-            else
-              commonType = leftType;
-          } else if (rightType.isAnyFloat)
-              commonType = rightType;
-          else
-            commonType = leftType.size > rightType.size
-              ? leftType
-              : rightType.size > leftType.size
-                ? rightType
-                : leftType.isSigned === rightType.isSigned
-                  ? leftType
-                  : leftType.isSigned === contextualType.isSigned
-                    ? leftType
-                    : rightType;
-
-          left = compiler.maybeConvertValue(node.left, left, leftType, commonType, false);
-          right = compiler.maybeConvertValue(node.right, right, rightType, commonType, false);
-          leftType = rightType = commonType;
+        if (check) {
           result = category.ne(left, right);
           break;
         }
@@ -353,28 +357,7 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
       // Logical
       case typescript.SyntaxKind.EqualsEqualsEqualsToken:
       //  compiler.warn(node.operatorToken, "Assuming '=='");
-        if (leftType.kind !== rightType.kind) {
-          if (leftType.isAnyFloat) {
-            if (rightType.isAnyFloat)
-              commonType = leftType.size >= rightType.size ? leftType : rightType;
-            else
-              commonType = leftType;
-          } else if (rightType.isAnyFloat)
-              commonType = rightType;
-          else
-            commonType = leftType.size > rightType.size
-              ? leftType
-              : rightType.size > leftType.size
-                ? rightType
-                : leftType.isSigned === rightType.isSigned
-                  ? leftType
-                  : leftType.isSigned === contextualType.isSigned
-                    ? leftType
-                    : rightType;
-
-          left = compiler.maybeConvertValue(node.left, left, leftType, commonType, false);
-          right = compiler.maybeConvertValue(node.right, right, rightType, commonType, false);
-          leftType = rightType = commonType;
+        if (check) {
           result = category.ne(left, right);
           break;
         }
