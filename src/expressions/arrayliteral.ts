@@ -17,14 +17,12 @@ export function compileArrayLiteral(compiler: Compiler, node: typescript.ArrayLi
 }
 
 export function compileArrayWithType(compiler: Compiler, arrayLength: number, elementType: type.Type): binaryen.Expression {
-    // const uintptrCategory = compiler.categoryOf(compiler.uintptrType);
     const newsize = compiler.currentFunction.localsByName[".newsize"] || compiler.currentFunction.addLocal(".newsize", compiler.uintptrType);
     const newptr = compiler.currentFunction.localsByName[".newptr"] || compiler.currentFunction.addLocal(".newptr", compiler.uintptrType);
     const binaryenPtrType = compiler.typeOf(compiler.uintptrType);
     const op = compiler.module;
     const headersize = reflection.uintType.size * 2; // capacity
     const arraysize = (elementType.size * arrayLength) + headersize;
-    // compiler.compileMallocInvocation(arraysize);
     return op.block("", [
       op.i32.store(
         0,
