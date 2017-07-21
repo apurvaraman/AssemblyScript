@@ -28,7 +28,6 @@ export function compileLoadOrStore(compiler: Compiler, node: typescript.Expressi
   // this is actually unnecessary, though this function does not have the information to decide that.
   // note: binaryen's optimizer seems to be able to eliminate the temp. local in this case, for now.
   const tempVar = compiler.currentFunction.localsByName[type.tempName] || compiler.currentFunction.addLocal(type.tempName, type);
-
   return op.block("", [
     op.setLocal(tempVar.index, ptr),
     compileStore(compiler, node, type, op.getLocal(tempVar.index, binaryenType), offset, valueToSet),

@@ -86,6 +86,10 @@ declare class Array<T> implements IDisposable {
   slice(begin?: int, end?: int): this;
   /** Reverses the array's elements in place. The first array element becomes the last, and the last array element becomes the first. */
   reverse(): this;
+  /** Returns the length of the array */
+  getLength(): int;
+  /** Returns the capacity of the array */
+  getCapacity(): int;
 
   // implemented
   dispose(): void;

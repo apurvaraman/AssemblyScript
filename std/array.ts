@@ -21,6 +21,14 @@ export class Array<T> implements IDisposable {
     return unsafe_cast<uintptr,this>(ptr);
   }
 
+  getLength(): int {
+    return this.length;
+  }
+
+  getCapacity(): int {
+    return this.capacity;
+  }
+
   indexOf(searchElement: T, fromIndex: int = 0): int {
     let length: int = this.length;
     if (length > this.capacity)

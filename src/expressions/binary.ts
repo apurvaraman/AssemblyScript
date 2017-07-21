@@ -93,7 +93,6 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
     case typescript.SyntaxKind.GreaterThanToken:
     case typescript.SyntaxKind.GreaterThanEqualsToken:
     case typescript.SyntaxKind.EqualsEqualsToken:
-    case typescript.SyntaxKind.EqualsEqualsEqualsToken:
     case typescript.SyntaxKind.ExclamationEqualsToken:
     case typescript.SyntaxKind.ExclamationEqualsEqualsToken:
       right = compiler.compileExpression(node.right, leftType);
@@ -121,6 +120,12 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
       right = compiler.maybeConvertValue(node.right, right, rightType, commonType, false);
       leftType = rightType = commonType;
 
+      resultType = reflection.boolType;
+      break;
+
+    case typescript.SyntaxKind.EqualsEqualsEqualsToken:
+      right = compiler.compileExpression(node.right, leftType);
+      rightType = typescript.getReflectedType(node.right);
       resultType = reflection.boolType;
       break;
 
@@ -225,7 +230,32 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
 
       // Logical
       case typescript.SyntaxKind.EqualsEqualsEqualsToken:
-        compiler.warn(node.operatorToken, "Assuming '=='");
+     //   compiler.warn(node.operatorToken, "Assuming '=='");
+        if (leftType.kind !== rightType.kind) {
+          if (leftType.isAnyFloat) {
+            if (rightType.isAnyFloat)
+              commonType = leftType.size >= rightType.size ? leftType : rightType;
+            else
+              commonType = leftType;
+          } else if (rightType.isAnyFloat)
+              commonType = rightType;
+          else
+            commonType = leftType.size > rightType.size
+              ? leftType
+              : rightType.size > leftType.size
+                ? rightType
+                : leftType.isSigned === rightType.isSigned
+                  ? leftType
+                  : leftType.isSigned === contextualType.isSigned
+                    ? leftType
+                    : rightType;
+
+          left = compiler.maybeConvertValue(node.left, left, leftType, commonType, false);
+          right = compiler.maybeConvertValue(node.right, right, rightType, commonType, false);
+          leftType = rightType = commonType;
+          result = category.ne(left, right);
+          break;
+        }
       case typescript.SyntaxKind.EqualsEqualsToken:
         result = category.eq(left, right);
         break;
@@ -322,7 +352,32 @@ export function compileBinary(compiler: Compiler, node: typescript.BinaryExpress
 
       // Logical
       case typescript.SyntaxKind.EqualsEqualsEqualsToken:
-        compiler.warn(node.operatorToken, "Assuming '=='");
+      //  compiler.warn(node.operatorToken, "Assuming '=='");
+        if (leftType.kind !== rightType.kind) {
+          if (leftType.isAnyFloat) {
+            if (rightType.isAnyFloat)
+              commonType = leftType.size >= rightType.size ? leftType : rightType;
+            else
+              commonType = leftType;
+          } else if (rightType.isAnyFloat)
+              commonType = rightType;
+          else
+            commonType = leftType.size > rightType.size
+              ? leftType
+              : rightType.size > leftType.size
+                ? rightType
+                : leftType.isSigned === rightType.isSigned
+                  ? leftType
+                  : leftType.isSigned === contextualType.isSigned
+                    ? leftType
+                    : rightType;
+
+          left = compiler.maybeConvertValue(node.left, left, leftType, commonType, false);
+          right = compiler.maybeConvertValue(node.right, right, rightType, commonType, false);
+          leftType = rightType = commonType;
+          result = category.ne(left, right);
+          break;
+        }
       case typescript.SyntaxKind.EqualsEqualsToken:
         result = category.eq(left, right);
         break;
