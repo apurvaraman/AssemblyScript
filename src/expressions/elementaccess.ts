@@ -50,19 +50,18 @@ export function compileElementAccess(compiler: Compiler, node: typescript.Elemen
       const value = Long.fromString(literalText, true, 10);
 
       // const binaryenType = binaryen.typeOf(elementType, compiler.uintptrSize);
-
-      const locals = compiler.currentFunction.locals;
-      if (locals) {
-        for (const local of locals) {
-          const tempVar = compiler.currentFunction.localsByName[local.name];
-          if (tempVar.type.underlyingClass && tempVar.type.underlyingClass.isArray) {
-            const arrayLength = tempVar.type.underlyingClass.methods.getLength.instance;
-            if (arrayLength && value) {
-              return 1;
-            }
-          }
-        }
-      }
+      // const locals = compiler.currentFunction.locals;
+      // if (locals) {
+      //   for (const local of locals) {
+      //     const tempVar = compiler.currentFunction.localsByName[local.name];
+      //     if (tempVar.type.underlyingClass && tempVar.type.underlyingClass.isArray) {
+      //       const arrayLength = tempVar.type.underlyingClass.methods.getLength.instance;
+      //       if (arrayLength && value) {
+      //         return 1;
+      //       }
+      //     }
+      //   }
+      // }
       return compileLoadOrStore(compiler, node, elementType,
         uintptrCategory.add(
           expression,
